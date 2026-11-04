@@ -27,3 +27,18 @@ Ergebnis: **B**. Gleiche Gesamtkorrelation, aber der wahre Sieger landet deutlic
 Optionen: A untere max(1, ⌈m/4⌉) · B untere max(1, ⌊m/5⌋) · C letzter Platz, ab m ≥ 10 die letzten zwei.
 Stimmen: B, B, C.
 Ergebnis: **B** (2:1). Bei m < 10 genau der letzte Platz je Person, wächst bei langen Listen maßvoll mit.
+
+## 3. Abstimmung Runde 2 (Fragen: docs/votes/runde2-fragen.md)
+Detailfragen der Entwickler-Agenten. Jeweils war Option A bereits umgesetzt.
+
+| Frage | Optionen | Stimmen | Ergebnis |
+|---|---|---|---|
+| F4 Hinweis bei neuer Option nach bisherigen Duellen | A Restduelle bis erste Rangliste · B Restduelle bis „stabil“ · C kein eigener Text | A, A, A | **A** |
+| F5 Position neuer Listen in der Übersicht | A oben · B unten · C nach letzter Änderung | C, C, C | **C** (Änderung) |
+| F6 Nach Import einer Sicherung | A Übersicht + Toast · B in Einstellungen bleiben | A, A, A | **A** |
+| F7 Checkbox „X neue Optionen übernehmen“ | A standardmäßig aus · B an · C eigener Button | A, A, A | **A** |
+| F8 Namensfrage beim Teilen abgebrochen | A zurück zur Liste mit Hinweis · B ohne Namen („Unbekannt“) · C Pflichtfeld | A, B, A | **A** (2:1) |
+| F9 Rangliste bei 0 Duellen | A 1.000 + Badge „neu“, Platz „–“ · B „–“ statt Punkten · C ausblenden | A, A, A | **A** |
+| F10 Liste mit < 2 Optionen speichern | A erlaubt mit Warnung · B Speichern sperren | A, B, B | **B** (2:1, Änderung) |
+
+Begründungen (Kurzfassung): F5 zeigt automatisch die gerade benutzte Liste oben, neue Listen inklusive. F10: Eine Liste mit weniger als zwei Optionen kann nie ein Duell ergeben; Sperren mit Meldung „mindestens 2 Optionen“ ist einfacher als Leerzustände.
