@@ -4,6 +4,8 @@ Elo-Duell hilft dir, aus einer Liste von Möglichkeiten (Urlaubsziele, Restauran
 
 **Zur App:** https://user-2268431.github.io/elo-duell/
 
+**Ausführliche Anleitung:** [ANLEITUNG.md](ANLEITUNG.md)
+
 ## Installation auf Android in drei Schritten
 
 1. Öffne https://user-2268431.github.io/elo-duell/ in **Chrome**.
