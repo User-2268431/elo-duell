@@ -3,3 +3,5 @@ F-B1 Position neuer Listen in der Übersicht: a oben (umgesetzt) / b unten / c n
 F-B2 Nach Import der Sicherung: a Übersicht + Toast (umgesetzt) / b in Einstellungen bleiben
 F-D1 Checkbox 'X neue Optionen übernehmen' beim Import: a aus (umgesetzt) / b an / c eigener Button, übernimmt sofort
 F-D2 Namensfrage beim Teilen abgebrochen: a zurück zur Liste mit Hinweis (umgesetzt) / b ohne Namen teilen ('Unbekannt') / c Pflichtfeld ohne Abbrechen
+F-C1 Rangliste bei 0 Duellen: a 1.000 + Badge 'neu', Platz '–' (umgesetzt) / b '–' statt Punkten / c Zeile ausblenden
+F-C2 Neue Liste mit < 2 Optionen speichern: a ja mit Warnung + Leerzustand (umgesetzt) / b Speichern sperren
