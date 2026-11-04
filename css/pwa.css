@@ -1,1 +1,17 @@
-/* Eigentümer: E – Update-Banner (.pwa-*). Siehe docs/ARCHITEKTUR.md §8. */
+/* Eigentümer: E – Update-Banner (.pwa-*). Siehe docs/ARCHITEKTUR.md §8.
+   Das Banner selbst baut ui.setBanner (C) mit data-testid="banner-update"; hier nur die Hervorhebung. */
+
+#banners [data-testid="banner-update"],
+.pwa-update {
+  background: var(--accent, #4f46e5);
+  color: var(--accent-fg, #ffffff);
+}
+
+#banners [data-testid="banner-update"] button,
+.pwa-update button {
+  background: var(--accent-fg, #ffffff);
+  color: var(--accent, #4f46e5);
+  border-color: transparent;
+  font-weight: 600;
+}
+
