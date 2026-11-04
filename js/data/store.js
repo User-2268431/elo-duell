@@ -241,8 +241,18 @@ export function createStore(deps = {}) {
       return l ? clone(l) : undefined;
     },
 
-    /** @returns {List[]} in der Reihenfolge von order */
-    listLists() { return state.order.map((id) => state.lists[id]).filter(Boolean).map(clone); },
+    /**
+     * Übersicht (DECISIONS F5 = C): nach letzter Änderung absteigend (updatedAt),
+     * Gleichstand: createdAt absteigend, dann Name. `order` bleibt gespeichert, bestimmt die Übersicht aber nicht mehr.
+     * @returns {List[]}
+     */
+    listLists() {
+      return state.order.map((id) => state.lists[id]).filter(Boolean)
+        .sort((a, b) => ((b.updatedAt || 0) - (a.updatedAt || 0))
+          || ((b.createdAt || 0) - (a.createdAt || 0))
+          || String(a.name).localeCompare(String(b.name), 'de'))
+        .map(clone);
+    },
 
     /** @param {string} name @param {string[]} names @param {string} [id] @returns {List} */
     createList(name, names, id) {

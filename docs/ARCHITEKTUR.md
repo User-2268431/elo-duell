@@ -162,7 +162,7 @@ export const store;   // = createStore() mit Default-Storage, s. u.; der Import 
 // Methoden (mutieren intern, speichern synchron, benachrichtigen Abonnenten; geben frische Objekte zurück):
 init(): {mode:'local'|'memory', warning:string|null}
 getState(): AppState      // nur lesen, nicht mutieren
-getList(id): List|undefined;   listLists(): List[]   // in der Reihenfolge von order
+getList(id): List|undefined;   listLists(): List[]   // nach updatedAt absteigend (F5 = C); Gleichstand: createdAt, Name
 createList(name, names:string[], id?:string): List
 renameList(id, name); deleteList(id); moveList(id, toIndex)
 addOptions(id, names:string[]): number   // Duplikate (normalizeName) ignoriert; gibt Anzahl neu hinzugefügter zurück

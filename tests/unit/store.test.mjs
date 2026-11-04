@@ -212,15 +212,67 @@ describe('Listen und Optionen', () => {
     const a = store.createList('A', []);
     const b = store.createList('B', []);
     assert.deepEqual(store.listLists().map((l) => l.id), [b.id, a.id, EXAMPLE_LIST_ID]);
+    // moveList ändert nur `order`; die Übersicht sortiert nach updatedAt (F5 = C).
     store.moveList(b.id, 2);
-    assert.deepEqual(store.listLists().map((l) => l.id), [a.id, EXAMPLE_LIST_ID, b.id]);
-    store.moveList(b.id, -5);
+    assert.deepEqual(store.getState().order, [a.id, EXAMPLE_LIST_ID, b.id]);
     assert.deepEqual(store.listLists().map((l) => l.id), [b.id, a.id, EXAMPLE_LIST_ID]);
+    store.moveList(b.id, -5);
+    assert.deepEqual(store.getState().order, [b.id, a.id, EXAMPLE_LIST_ID]);
     store.renameList(a.id, 'A2');
     assert.equal(store.getList(a.id).name, 'A2');
     store.deleteList(a.id);
     assert.equal(store.getList(a.id), undefined);
     assert.deepEqual(store.getState().order, [b.id, EXAMPLE_LIST_ID]);
+  });
+
+  test('listLists: nach letzter Änderung absteigend (F5 = C)', () => {
+    const { store } = mk();
+    const a = store.createList('A', ['x', 'y']);
+    const b = store.createList('B', ['x', 'y']);
+    const ids = () => store.listLists().map((l) => l.id);
+    const ex = EXAMPLE_LIST_ID;
+    assert.deepEqual(ids(), [b.id, a.id, ex], 'neue Listen oben');
+    const [x, y] = store.getList(a.id).options.map((o) => o.id);
+    store.recordDuel(a.id, x, y, 1);
+    assert.deepEqual(ids(), [a.id, b.id, ex], 'Duell');
+    store.renameList(ex, 'Ziele');
+    assert.deepEqual(ids(), [ex, a.id, b.id], 'Umbenennen');
+    store.undoLastDuel(a.id);
+    assert.deepEqual(ids(), [a.id, ex, b.id], 'Rückgängig');
+    store.addOptions(b.id, ['z']);
+    assert.equal(ids()[0], b.id, 'Option hinzufügen');
+    const ea = store.getList(ex).options[0].id;
+    store.renameOption(ex, ea, 'Neu benannt');
+    assert.equal(ids()[0], ex, 'Option umbenennen');
+    store.removeOption(a.id, x);
+    assert.equal(ids()[0], a.id, 'Option entfernen');
+    store.resetRatings(b.id);
+    assert.equal(ids()[0], b.id, 'Reset');
+    store.savePartner(ex, { deviceId: 'd_p', name: 'P', sentAt: 1, receivedAt: 1, options: [] });
+    assert.equal(ids()[0], ex, 'Partner speichern');
+    store.removePartner(a.id, 'd_unbekannt');
+    assert.equal(ids()[0], ex, 'nichts entfernt → keine Änderung');
+    store.savePartner(a.id, { deviceId: 'd_p', name: 'P', sentAt: 1, receivedAt: 1, options: [] });
+    store.renameList(b.id, 'B2');
+    store.removePartner(a.id, 'd_p');
+    assert.equal(ids()[0], a.id, 'Partner entfernen');
+  });
+
+  test('listLists: Gleichstand → createdAt absteigend, dann Name', () => {
+    const storage = new FakeStorage();
+    const store = createStore({ storage, now: () => 5 });
+    store.init();
+    const s = store.getState();
+    const base = s.lists[EXAMPLE_LIST_ID];
+    s.lists = {
+      l_b: { ...base, id: 'l_b', name: 'Beta', createdAt: 1, updatedAt: 9 },
+      l_a: { ...base, id: 'l_a', name: 'Alpha', createdAt: 1, updatedAt: 9 },
+      l_c: { ...base, id: 'l_c', name: 'Gamma', createdAt: 2, updatedAt: 9 },
+      l_d: { ...base, id: 'l_d', name: 'Delta', createdAt: 3, updatedAt: 4 },
+    };
+    s.order = ['l_d', 'l_b', 'l_a', 'l_c'];
+    store.replaceAll(s);
+    assert.deepEqual(store.listLists().map((l) => l.id), ['l_c', 'l_a', 'l_b', 'l_d']);
   });
 
   test('addOptions gibt Anzahl neuer zurück', () => {

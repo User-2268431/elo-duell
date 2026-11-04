@@ -126,3 +126,73 @@ test('Neue Liste ohne Namen wird nicht angelegt', async ({ page }) => {
   await expect(page.getByTestId('toast')).toContainText('Namen');
   await expect(page).toHaveURL(/#\/neu$/);
 });
+
+test('Neue Liste mit weniger als zwei Optionen lässt sich nicht speichern (F10)', async ({ page }) => {
+  await page.getByTestId('home-new').click();
+  const save = page.getByTestId('edit-save');
+  const count = page.getByTestId('edit-count');
+  await page.getByTestId('edit-name').fill('Zu kurz');
+  await expect(count).toHaveText('0 Optionen erkannt – Mindestens 2 Optionen nötig');
+  await expect(save).toBeDisabled();
+  await page.getByTestId('edit-options').fill('Nur eine\nnur eine');
+  await expect(count).toHaveText('1 Option erkannt – Mindestens 2 Optionen nötig');
+  await expect(save).toBeDisabled();
+  // Enter im Namensfeld schickt das Formular ab → Meldung statt Speichern
+  await page.getByTestId('edit-name').press('Enter');
+  await expect(page.getByTestId('toast')).toContainText('Mindestens 2 Optionen nötig');
+  await expect(page).toHaveURL(/#\/neu$/);
+  await page.getByTestId('edit-options').fill('Nur eine\nZweite');
+  await expect(count).toHaveText('2 Optionen erkannt');
+  await expect(save).toBeEnabled();
+  await save.click();
+  await page.waitForURL(/#\/liste\/[^/]+$/);
+  await expect(page.getByTestId('list-progress')).toContainText('2 Optionen');
+});
+
+test('Bearbeiten: Löschen unter zwei Optionen gesperrt, „Liste löschen“ geht', async ({ page }) => {
+  const id = await createList(page, 'Paar', ['Links', 'Mitte', 'Rechts']);
+  await page.goto(`./#/liste/${id}/bearbeiten`);
+  const rows = page.locator('li[data-testid^="edit-opt-"]');
+  const removeBtns = page.locator('[data-testid^="edit-opt-remove-"]');
+  await expect(rows).toHaveCount(3);
+  await expect(page.getByTestId('edit-opt-min')).toBeHidden();
+  await removeBtns.first().click();
+  await expect(rows).toHaveCount(2);
+  await expect(page.getByTestId('edit-opt-min')).toBeVisible();
+  await expect(page.getByTestId('edit-opt-min')).toContainText('Mindestens 2 Optionen nötig');
+  await expect(removeBtns).toHaveCount(2);
+  for (const b of await removeBtns.all()) await expect(b).toBeDisabled();
+  // Reload: Sperre bleibt
+  await page.reload();
+  await expect(rows).toHaveCount(2);
+  for (const b of await removeBtns.all()) await expect(b).toBeDisabled();
+  // Neue Option hinzufügen hebt die Sperre auf
+  await page.getByTestId('edit-options').fill('Oben');
+  await page.getByTestId('edit-save').click();
+  await page.waitForURL(new RegExp(`#/liste/${id}$`));
+  await page.goto(`./#/liste/${id}/bearbeiten`);
+  await expect(rows).toHaveCount(3);
+  await expect(page.getByTestId('edit-opt-min')).toBeHidden();
+  for (const b of await removeBtns.all()) await expect(b).toBeEnabled();
+  // Ganze Liste löschen bleibt möglich
+  await page.getByTestId('edit-delete-list').click();
+  await page.getByTestId('dialog-ok').click();
+  await page.waitForURL(/#\/$/);
+  await expect(page.getByTestId(`home-list-${id}`)).toHaveCount(0);
+});
+
+test('Übersicht sortiert nach letzter Änderung (F5)', async ({ page }) => {
+  const a = await createList(page, 'Erste', ['A', 'B']);
+  const b = await createList(page, 'Zweite', ['C', 'D']);
+  await page.goto('./#/');
+  const cards = page.locator('[data-testid^="home-list-"]');
+  await expect(cards.nth(0)).toHaveAttribute('data-testid', `home-list-${b}`);
+  await expect(cards.nth(1)).toHaveAttribute('data-testid', `home-list-${a}`);
+  // Duell in der älteren Liste → sie rückt nach oben
+  await page.goto(`./#/duell/${a}`);
+  await page.getByTestId('duel-a').click();
+  await expect(page.getByTestId('duel-progress')).toHaveAttribute('data-duels', '1');
+  await page.goto('./#/');
+  await expect(cards.nth(0)).toHaveAttribute('data-testid', `home-list-${a}`);
+  await expect(cards.nth(1)).toHaveAttribute('data-testid', `home-list-${b}`);
+});

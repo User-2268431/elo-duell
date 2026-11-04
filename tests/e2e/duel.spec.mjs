@@ -158,7 +158,15 @@ test('Rangliste zeigt neue Optionen mit „neu“ am Ende', async ({ page }) => 
 });
 
 test('Leerzustand bei weniger als zwei Optionen', async ({ page }) => {
-  const id = await createList(page, 'Allein', ['Nur eine']);
+  // Über die Oberfläche nicht mehr anlegbar (F10 = B); Sicherheitsnetz z. B. für importierte Daten.
+  const id = await createList(page, 'Allein', ['Nur eine', 'Weg damit']);
+  await page.evaluate((listId) => {
+    const key = 'elo-duell:state';
+    const s = JSON.parse(/** @type {string} */ (localStorage.getItem(key)));
+    s.lists[listId].options = s.lists[listId].options.slice(0, 1);
+    localStorage.setItem(key, JSON.stringify(s));
+  }, id);
+  await page.reload();
   await page.getByTestId('list-duel').click();
   await expect(page.getByTestId('duel-empty')).toBeVisible();
   await expect(page.getByTestId('duel-a')).toHaveCount(0);

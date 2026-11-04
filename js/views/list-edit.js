@@ -17,6 +17,10 @@ function norm(s) {
   try { return normalizeName(s); } catch { return s.trim().toLowerCase(); }
 }
 
+/** Untergrenze für Optionen je Liste (DECISIONS F10 = B). */
+const MIN_OPTIONS = 2;
+const MSG_MIN = 'Mindestens 2 Optionen nötig';
+
 export default {
   /** @param {any} ctx */
   title: (ctx) => (ctx.params.id ? 'Liste bearbeiten' : 'Neue Liste'),
@@ -48,18 +52,25 @@ export default {
       return parsed.filter((n) => !have.has(norm(n)));
     }
 
+    /** Anzahl Optionen nach dem Speichern (vorhandene + neue). */
+    function totalAfterSave() {
+      const have = isEdit ? (store.getList(listId)?.options.length ?? 0) : 0;
+      return have + newNames().length;
+    }
+
     function updateCount() {
       const n = newNames().length;
+      const tooFew = totalAfterSave() < MIN_OPTIONS;
       if (isEdit) {
         count.textContent = n ? `${plural(n, 'neue Option', 'neue Optionen')} erkannt` : 'Keine neuen Optionen';
       } else {
         count.textContent = `${plural(n, 'Option', 'Optionen')} erkannt`;
-        count.classList.toggle('lists-count-warn', optsInput.value.trim() !== '' && n < 2);
-        if (optsInput.value.trim() !== '' && n < 2) count.textContent += ' – für Duelle brauchst du mindestens zwei';
       }
+      if (tooFew) count.textContent += ` – ${MSG_MIN}`;
+      count.classList.toggle('lists-count-warn', tooFew && (isEdit || optsInput.value.trim() !== ''));
+      saveBtn.disabled = tooFew;
+      saveBtn.title = tooFew ? MSG_MIN : '';
     }
-    optsInput.addEventListener('input', updateCount);
-    updateCount();
 
     function save() {
       const name = nameInput.value.trim();
@@ -69,6 +80,11 @@ export default {
         return;
       }
       const names = newNames();
+      if (totalAfterSave() < MIN_OPTIONS) {
+        toast(MSG_MIN);
+        optsInput.focus();
+        return;
+      }
       if (!isEdit) {
         const list = store.createList(name, names);
         navigate(`#/liste/${encodeURIComponent(list.id)}`, { replace: true });
@@ -97,11 +113,15 @@ export default {
     /* ---------- Bestehende Optionen (nur Bearbeiten) ---------- */
     const optBox = h('ul', { class: 'lists-opts', 'aria-label': 'Optionen' });
     const optHead = h('h2', { class: 'lists-section-title' });
+    const optMin = h('p', { class: 'field-hint', 'data-testid': 'edit-opt-min', hidden: true },
+      `${MSG_MIN} – füge erst eine weitere hinzu, bevor du eine löschst. Die ganze Liste entfernst du mit „Liste löschen“.`);
 
     function drawOptions() {
       const list = store.getList(listId);
       if (!list) return;
       optHead.textContent = `Optionen (${list.options.length.toLocaleString('de-DE')})`;
+      const locked = list.options.length <= MIN_OPTIONS;
+      optMin.hidden = !locked;
       if (!list.options.length) {
         optBox.replaceChildren(h('li', { class: 'lists-opt-empty muted' }, 'Noch keine Optionen.'));
         return;
@@ -112,7 +132,8 @@ export default {
         h('button', { type: 'button', class: 'btn btn-ghost btn-icon', 'data-testid': `edit-opt-rename-${o.id}`,
           'aria-label': `${o.name} umbenennen`, on: { click: () => renameOpt(o.id) } }, icon('pencil', 20)),
         h('button', { type: 'button', class: 'btn btn-ghost btn-icon lists-opt-remove', 'data-testid': `edit-opt-remove-${o.id}`,
-          'aria-label': `${o.name} löschen`, on: { click: () => removeOpt(o.id) } }, icon('trash', 20)),
+          'aria-label': `${o.name} löschen`, disabled: locked, title: locked ? MSG_MIN : null,
+          on: { click: () => removeOpt(o.id) } }, icon('trash', 20)),
       )));
     }
 
@@ -132,8 +153,10 @@ export default {
 
     /** @param {string} optId */
     async function removeOpt(optId) {
-      const opt = store.getList(listId)?.options.find((/** @type {any} */ o) => o.id === optId);
-      if (!opt) return;
+      const list = store.getList(listId);
+      const opt = list?.options.find((/** @type {any} */ o) => o.id === optId);
+      if (!list || !opt) return;
+      if (list.options.length <= MIN_OPTIONS) { toast(MSG_MIN); return; }
       if (opt.duels > 0) {
         const ok = await confirmDialog({
           title: `„${opt.name}“ löschen?`,
@@ -142,6 +165,7 @@ export default {
         });
         if (!ok) return;
       }
+      if ((store.getList(listId)?.options.length ?? 0) <= MIN_OPTIONS) { toast(MSG_MIN); drawOptions(); return; }
       store.removeOption(listId, optId);
       toast(`„${opt.name}“ gelöscht`);
       drawOptions();
@@ -176,11 +200,13 @@ export default {
 
     const saveBtn = h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'edit-save',
       on: { click: save } }, isEdit ? 'Speichern' : 'Liste anlegen');
+    optsInput.addEventListener('input', updateCount);
+    updateCount();
 
     const parts = [form];
     if (isEdit) {
       parts.push(
-        h('section', { class: 'stack lists-section' }, optHead, optBox),
+        h('section', { class: 'stack lists-section' }, optHead, optMin, optBox),
         h('section', { class: 'stack lists-section lists-danger-zone' },
           h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'edit-reset', on: { click: resetAll } },
             'Wertungen zurücksetzen'),
