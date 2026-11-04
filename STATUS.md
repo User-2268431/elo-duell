@@ -7,7 +7,7 @@ Stand: 2026-11-04 22:35 MEZ
 - Antworten Anfangsrunde: GitHub Pages, Repo „elo-duell“ (öffentlich), Austausch per QR und Link, Optik automatisch, nur kleine Beispielliste.
 
 ## Offene Hindernisse
-- Repo User-2268431/elo-duell existiert noch nicht; Session kann keine Repos anlegen. Nutzer muss es anlegen und der Claude-GitHub-App Zugriff geben. Bis dahin nur lokale Commits.
+- (erledigt 22:45) Repo angelegt, Pages aktiv (main, /), HTTPS erzwungen, Claude-App hat Zugriff. Hinweise: alle Pfade relativ, leere .nojekyll.
 
 ## Phasen
 - [ ] 1 Recherche (PWA/Offline, QR, Elo-Abbruchregel)
