@@ -1,5 +1,5 @@
 // Eigentümer: A – Stabilitätsanzeige (docs/ARCHITEKTUR.md §4A).
-// Rahmen fest (M = Σduels/2, level/remaining/ratio/hint); Inhalt von thresholds(): OFFEN F1, Entscheidung folgt in DECISIONS.md.
+// Rahmen fest (M = Σduels/2, level/remaining/ratio/hint); Inhalt von thresholds(): DECISIONS.md F1 = A (docs/research/elo-abbruch.md §3).
 
 /**
  * @param {number} n Anzahl Optionen

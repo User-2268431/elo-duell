@@ -1,5 +1,5 @@
 // Eigentümer: A – Ranglistenvergleich (docs/ARCHITEKTUR.md §4A).
-// Schwelle excludedThreshold(m): OFFEN F3, Entscheidung folgt in DECISIONS.md.
+// Schwelle excludedThreshold(m) = max(1, floor(m/5)) (DECISIONS.md F3 = B).
 
 /** @typedef {{name:string, rankA:number, rankB:number, ratingA:number, ratingB:number, veto:boolean}} CmpItem */
 /** @typedef {{common:number, favorites:CmpItem[], excluded:CmpItem[], talk:CmpItem[],

@@ -6,9 +6,9 @@ Stand 04.11.2026. Verbindlich für die 5 parallelen Entwickler-Agenten A–E. Wa
 - Commit 0 mit Skeletten aller Dateien (§11). „Stubs werden nicht eingecheckt“ ist gestrichen.
 - storage-Schlüssel `elo-duell:state`. `store` ist in Node importierbar. Das storage-Event wird gefiltert, `persist()` erst nach dem ersten Schreiben aufgerufen (§3, §4B).
 - Typedef `ShareData` und Payload-Feld `a` (Aliase), `sentAt = t*1000` (§3, §5).
-- Stabilität: Rahmen und Schnittstelle stehen fest, M = Σduels/2. Die Schwellen sind **OFFEN F1** (§4A).
-- Paarbildung: harte Sperre gegen direkte Wiederholung. Die Heuristik ist **OFFEN F2** (§4A).
-- Vergleich: Wettkampf-Ränge auf gerundeten Wertungen, Regeln für Disjunktheit und Überschneidung, Leertexte. Die Schwelle ist **OFFEN F3** (§4A).
+- Stabilität: Rahmen und Schnittstelle stehen fest, M = Σduels/2. Die Schwellen: **F1 = A** (Regel aus elo-abbruch.md §3, siehe DECISIONS.md).
+- Paarbildung: harte Sperre gegen direkte Wiederholung. Die Heuristik: **F2 = B** (Top-Fokus aus elo-abbruch.md §4).
+- Vergleich: Wettkampf-Ränge auf gerundeten Wertungen, Regeln für Disjunktheit und Überschneidung, Leertexte. Die Schwelle: **F3 = B**, t = max(1, ⌊m/5⌋).
 - resetRatings leert die History, renameOption prüft auf Duplikate, Backup-Import behält die device.id, eigenes Payload wird abgewiesen (§3, §4B, §7).
 - Ablauf nach dem Import (Partner speichern → selber duellieren), Rückweg-Button, Hinweise im Vergleich (§7).
 - QR immer mit ECC L, nur bis 1000 Zeichen URL, ab 2000 Zeichen eine Warnung (§5).
@@ -84,7 +84,7 @@ tools/serve.mjs  tools/make-icons.mjs  playwright.config.mjs  package.json  .git
 - **Beispielliste** nur bei leerem State: „Urlaubsziele“ mit Lissabon, Kopenhagen, Rom, Bergen, Dolomiten, Kreta, Edinburgh, Ostsee (ID fest `l_beispiel01`).
 
 ## 4. Öffentliche APIs
-Die Signaturen sind fest, auch dort, wo der Inhalt noch OFFEN ist. Commit 0 enthält sie als Skelett.
+Die Signaturen sind fest. Commit 0 enthält sie als Skelett.
 ### A) Logik (rein, DOM-frei, deterministisch bei injiziertem `rng`)
 ```js
 // elo.js
@@ -114,7 +114,7 @@ export function pickPair(options, history, opts)
 - Bei n = 2 ist Wiederholung erlaubt. Seiten (links/rechts) werden zufällig vertauscht.
 - Test: n = 3..6, je 1000 Ziehungen mit fortgeschriebener History, `last` kommt nie direkt wieder.
 
-**Heuristik (Wahl von a und b innerhalb der zulässigen Paare): OFFEN F2, Entscheidung folgt in DECISIONS.md.** Gemeint ist die Kostenfunktion aus v1 oder der Top-Fokus aus elo-abbruch.md §4. Die Zusatzregel „dieselbe Option höchstens zweimal in Folge“ (Prüfung S6) wird mit F2 entschieden.
+**Heuristik (entschieden, DECISIONS.md F2 = B): Top-Fokus aus elo-abbruch.md §4** (erst jede Option 2 Duelle, a = Option mit den wenigsten Duellen; danach mehr Duelle für die oberen Ränge; Partner nach Elo-Nähe und Duellzahl, gespielte Paare meiden, etwas Zufall über `rng`). Die Zusatzregel „dieselbe Option höchstens zweimal in Folge“ (Prüfung S6) gilt, sofern ein anderes zulässiges Paar existiert.
 ```js
 // stability.js
 /** @param {number} n Anzahl Optionen
@@ -131,7 +131,7 @@ export function progress(listLike)
 
 Hinweistexte: start „Noch ca. {remaining} Duelle bis zur ersten Rangliste“ · vorlaeufig „Rangliste vorläufig – noch ca. {remaining} Duelle bis zur stabilen Rangliste“ · stabil „Rangliste stabil ✓ Weitere Duelle machen sie noch genauer.“ · n < 2 „Füge mindestens zwei Optionen hinzu“.
 
-**Inhalt von `thresholds(n)` (Konstanten, Formel für dStab usw.): OFFEN F1, Entscheidung folgt in DECISIONS.md.**
+**Inhalt von `thresholds(n)` (entschieden, DECISIONS.md F1 = A):** vorläufig ab M1 = ⌈1,5·N⌉ Duellen und jede Option ≥ 2 Duelle; stabil ab M2 = ⌈dStab·N/2⌉ und jede Option ≥ 3; dStab = 4 (N ≤ 10), 5 (N ≤ 30), sonst 6. Restduelle, fortschritt = M/M2 und Hinweistexte wie in elo-abbruch.md §3.
 ```js
 // compare.js
 /** @param {{name:string,rating:number,duels:number}[]} mine @param {{name:string,rating:number,duels:number}[]} theirs
@@ -151,7 +151,7 @@ export function excludedThreshold(m)
 - `talk`: `|rankA − rankB| ≥ 2`, nach Differenz absteigend, dann min(rankA, rankB), dann Name, höchstens 5. talk und excluded **dürfen sich überschneiden**, solche Einträge haben `veto:true`. Die UI markiert sie („bei einer Person ganz unten“). Sonst gilt `veto:false`.
 - `onlyMine`/`onlyTheirs`: Namen, nach Wertung absteigend.
 - Folgen: Bei m = 2 ist talk immer leer. Sind sich die beiden bei m = 2 uneinig, sind beide Optionen ausgeschlossen und favorites ist leer.
-- **Schwelle t = `excludedThreshold(m)` (≥ 1 für m ≥ 2): OFFEN F3, Entscheidung folgt in DECISIONS.md.**
+- **Schwelle t = `excludedThreshold(m)` = max(1, ⌊m/5⌋) (entschieden, DECISIONS.md F3 = B).**
 
 ### B) Daten
 ```js
