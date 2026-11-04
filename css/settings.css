@@ -1,1 +1,42 @@
 /* Eigentümer: B – Einstellungen (.set-*). Siehe docs/ARCHITEKTUR.md §8. */
+.set-view {
+  padding-bottom: calc(var(--gap, 16px) + env(safe-area-inset-bottom));
+}
+
+.set-heading {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.set-section > p {
+  margin: 0;
+}
+
+.set-storage p {
+  margin: 0;
+}
+
+.set-error {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.set-error[hidden] {
+  display: none;
+}
+
+/* Dateiauswahl unsichtbar; geöffnet über den Button „Sicherung importieren“. */
+.set-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.set-version {
+  text-align: center;
+  margin: 0;
+}

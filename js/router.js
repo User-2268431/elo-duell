@@ -87,6 +87,7 @@ function render() {
     back.hidden = !parent;
     back.onclick = parent ? () => navigate(parent(m.params)) : null;
   }
+  document.getElementById('bar-actions')?.replaceChildren(); // Views dürfen hier Kopfzeilen-Buttons ablegen
   root.dataset.route = m.route.pattern;
   window.scrollTo(0, 0);
   try {
