@@ -3,6 +3,9 @@ import { h, icon, toast } from '../ui.js';
 import { pickPair } from '../logic/pairing.js';
 import { progress } from '../logic/stability.js';
 
+/** Nach jeder Entscheidung (auch Gleich gut, Überspringen, Rückgängig) Eingaben so lange ignorieren (M1: Doppeltipp). */
+export const INPUT_LOCK_MS = 250;
+
 export default {
   title: 'Duell',
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
@@ -31,6 +34,8 @@ export default {
     /** @type {[string,string]|null} zuletzt gezeigtes Paar */ let lastShown = null;
     /** @type {[string,string][]} in dieser Sitzung übersprungen */ const avoid = [];
     /** @type {[string,string]|null} aktuell gezeigtes Paar (a, b) */ let current = null;
+    /** Zeitpunkt (performance.now), bis zu dem Eingaben ignoriert werden. */ let lockedUntil = 0;
+    /** @type {ReturnType<typeof setTimeout>|null} */ let lockTimer = null;
 
     /* ---------- Gerüst ---------- */
     const barFill = h('span');
@@ -59,11 +64,26 @@ export default {
     const stableBox = h('div', { class: 'duel-stable-slot' });
     const question = h('h2', { class: 'duel-question' }, 'Was gefällt dir besser?');
 
-    root.append(h('div', { class: 'duel-view' },
+    const view = h('div', { class: 'duel-view' },
       h('div', { class: 'duel-top' }, progressBox, stableBox, question),
       h('div', { class: 'duel-cards' }, cardA, h('span', { class: 'duel-or', 'aria-hidden': 'true' }, 'oder'), cardB),
       actions,
-    ));
+    );
+    root.append(view);
+
+    /* ---------- Eingabesperre (M1) ---------- */
+    const clock = () => (globalThis.performance?.now ? performance.now() : Date.now());
+    /** @returns {boolean} true, wenn die Eingabe angenommen wird (und sperrt danach für INPUT_LOCK_MS) */
+    function accept() {
+      const t = clock();
+      if (t < lockedUntil) return false;
+      lockedUntil = t + INPUT_LOCK_MS;
+      // Klasse schaltet pointer-events ab: ein zweiter Tipp trifft nichts. Kein disabled, damit nichts flackert.
+      view.classList.add('is-locked');
+      if (lockTimer) clearTimeout(lockTimer);
+      lockTimer = setTimeout(() => { lockTimer = null; view.classList.remove('is-locked'); }, INPUT_LOCK_MS);
+      return true;
+    }
 
     /* ---------- Ablauf ---------- */
     function getList() {
@@ -115,7 +135,7 @@ export default {
 
     /** @param {1|0.5|0} s */
     function decide(s) {
-      if (!current) return;
+      if (!current || !accept()) return;
       const [a, b] = current;
       lastShown = [a, b];
       store.recordDuel(id, a, b, s);
@@ -126,13 +146,14 @@ export default {
     }
 
     function skip() {
-      if (!current) return;
+      if (!current || !accept()) return;
       lastShown = [current[0], current[1]];
       avoid.push([current[0], current[1]]);
       next();
     }
 
     function undo() {
+      if (!accept()) return;
       const d = store.undoLastDuel(id);
       if (!d) { updateStatus(); return; }
       const list = getList();
@@ -169,6 +190,9 @@ export default {
     document.addEventListener('keydown', onKey);
 
     next();
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (lockTimer) clearTimeout(lockTimer);
+    };
   },
 };

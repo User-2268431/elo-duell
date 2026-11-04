@@ -2,7 +2,7 @@
 
 .cmp-head { justify-content: space-between; }
 .cmp-date { flex: 1 1 12em; font-size: 1rem; }
-.cmp-remove { color: var(--danger); white-space: nowrap; }
+.cmp-remove { color: var(--danger-text); white-space: nowrap; }
 .cmp-hint { border-color: var(--accent); background: var(--accent-soft); }
 .cmp-heading { font-size: 1.1875rem; }
 .cmp-intro { font-size: 1rem; }
@@ -20,7 +20,7 @@
   align-self: flex-start;
   margin-top: 4px;
   background: color-mix(in srgb, var(--danger) 14%, transparent);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 .cmp-favorites .cmp-item { border-left: 4px solid var(--ok); }
 .cmp-empty { font-size: 1rem; }

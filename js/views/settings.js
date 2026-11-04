@@ -1,5 +1,5 @@
 // Eigentümer: B – View settings (docs/ARCHITEKTUR.md §6, §7).
-import { backupFileName, downloadBackup, readBackupFile } from '../data/backup.js';
+import { backupFileName, downloadBackup, downloadBroken, readBackupFileDetailed } from '../data/backup.js';
 import { VERSION } from '../version.js';
 
 /** @param {number} bytes @returns {string} */
@@ -49,8 +49,9 @@ export default {
       if (!file) return;
       showError(null);
       let next;
+      let repaired = 0;
       try {
-        next = await readBackupFile(file);
+        ({ state: next, repaired } = await readBackupFileDetailed(file));
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Die Sicherung konnte nicht gelesen werden.';
         showError(msg);
@@ -61,6 +62,9 @@ export default {
       const ok = await ui.confirmDialog({
         title: 'Sicherung importieren?',
         text: `Die Sicherung enthält ${n.toLocaleString('de-DE')} ${n === 1 ? 'Liste' : 'Listen'}. ` +
+          (repaired > 0
+            ? `${repaired.toLocaleString('de-DE')} ${repaired === 1 ? 'beschädigter Eintrag wird' : 'beschädigte Einträge werden'} dabei entfernt oder repariert. `
+            : '') +
           'Alle Listen auf diesem Gerät werden dadurch ersetzt. Das lässt sich nicht rückgängig machen.',
         okLabel: 'Ersetzen',
         danger: true,
@@ -114,6 +118,40 @@ export default {
     }
     renderStorage();
 
+    /* ---------- Beschädigte Daten (nur sichtbar, wenn vorhanden) ---------- */
+    const brokenSection = h('section', { class: 'card stack set-section', 'data-testid': 'set-broken', hidden: true });
+
+    function renderBroken() {
+      const entries = typeof store.listBroken === 'function' ? store.listBroken() : [];
+      brokenSection.hidden = !entries.length;
+      if (!entries.length) { brokenSection.replaceChildren(); return; }
+      const many = entries.length > 1;
+      brokenSection.replaceChildren(
+        h('h2', { class: 'set-heading' }, 'Beschädigte Daten'),
+        h('p', { class: 'muted' },
+          'Beim Laden waren gespeicherte Daten beschädigt. Das Original wurde unverändert beiseitegelegt. ' +
+          'Du kannst es als Datei herunterladen und z. B. über „Sicherung importieren“ wiederherstellen.'),
+        ...entries.map((/** @type {{key:string, at:number, size:number}} */ e, i) => h('button', {
+          type: 'button', class: 'btn btn-block', 'data-testid': 'set-broken-download', 'data-key': e.key,
+          on: {
+            click: () => {
+              const raw = store.getBroken(e.key);
+              if (raw === null) { ui.toast('Die beschädigten Daten sind nicht mehr vorhanden'); renderBroken(); return; }
+              try {
+                downloadBroken(raw, e.at);
+                ui.toast('Beschädigte Daten heruntergeladen');
+              } catch {
+                ui.toast('Download nicht möglich');
+              }
+            },
+          },
+        }, many
+          ? `Beschädigte Daten herunterladen (${e.at ? ui.fmtDate(e.at) : (i === 0 ? 'älteste' : `Nr. ${i + 1}`)})`
+          : 'Beschädigte Daten herunterladen')),
+      );
+    }
+    renderBroken();
+
     /* ---------- Aufbau ---------- */
     root.replaceChildren(h('div', { class: 'set-view stack' },
       h('section', { class: 'card stack set-section' },
@@ -152,6 +190,7 @@ export default {
         h('h2', { class: 'set-heading' }, 'Speicher'),
         storageBox,
       ),
+      brokenSection,
       h('p', { class: 'muted small set-version', 'data-testid': 'set-version' }, `Elo-Duell Version ${VERSION}`),
     ));
 

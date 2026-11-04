@@ -80,3 +80,7 @@
 .duel-stable-slot:empty { display: none; }
 
 .duel-empty { margin-top: 24px; }
+
+/* Kurze Eingabesperre nach jeder Entscheidung (M1): ein Doppeltipp wertet nur ein Duell. */
+.duel-view.is-locked .duel-card,
+.duel-view.is-locked .duel-action { pointer-events: none; }

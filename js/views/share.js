@@ -1,6 +1,6 @@
 // Eigentümer: D – View share (docs/ARCHITEKTUR.md §5, §6, §7).
 import { h, toast, promptDialog } from '../ui.js';
-import { encodeShare, buildShareUrl, toShareData, MAX_NAME } from '../share/codec.js';
+import { encodeShare, buildShareUrl, toShareData, MAX_NAME, MAX_OPTIONS, MAX_PAYLOAD } from '../share/codec.js';
 import { renderQr, QR_MAX_URL, LINK_WARN_URL } from '../share/qr.js';
 
 /** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
@@ -34,7 +34,7 @@ export default {
       if (!device.name) {
         const name = await promptDialog({ title: 'Wie heißt du?', label: 'Dein Name (sieht die andere Person)', okLabel: 'Weiter' });
         if (!alive) return;
-        const clean = (name || '').trim().slice(0, MAX_NAME);
+        const clean = Array.from((name || '').trim()).slice(0, MAX_NAME).join('').trim();
         if (!clean) {
           toast('Ohne Namen kann die andere Person deine Rangliste nicht zuordnen');
           navigate(`#/liste/${encodeURIComponent(id)}`, { replace: true });
@@ -49,6 +49,29 @@ export default {
       if (!alive) return;
       const url = buildShareUrl(payload, location);
       const duels = list.options.reduce((s, o) => s + o.duels, 0) / 2;
+      const n = list.options.length;
+
+      // N3: mehr als MAX_OPTIONS Optionen → nur die bestplatzierten gehen mit; zu langer Link → klare Meldung statt Link.
+      const truncated = n > MAX_OPTIONS
+        ? h('p', { class: 'card share-warn', 'data-testid': 'share-truncated', role: 'status' },
+          `Die Liste hat ${n.toLocaleString('de-DE')} Optionen. Geteilt werden nur die ${MAX_OPTIONS.toLocaleString('de-DE')} bestplatzierten – die übrigen fehlen bei der anderen Person.`)
+        : null;
+      const head = h('div', { class: 'share-head' },
+        h('h2', { class: 'share-title' }, list.name),
+        h('p', { class: 'muted' }, duels > 0
+          ? `Deine Rangliste · ${n.toLocaleString('de-DE')} Optionen · ${duels.toLocaleString('de-DE')} Duelle · als ${device.name}`
+          : `Liste ohne Duelle · ${n.toLocaleString('de-DE')} Optionen · als ${device.name}`),
+      );
+      if (payload.length > MAX_PAYLOAD) {
+        fill(box, head, truncated,
+          h('p', { class: 'card share-too-big', 'data-testid': 'share-too-long', role: 'alert' },
+            'Die Liste ist zu groß zum Teilen: Der Link wäre zu lang und ließe sich auf dem anderen Handy nicht öffnen. ' +
+            'Kürze lange Namen oder entferne Optionen und versuche es dann noch einmal.'),
+          h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'share-edit',
+            on: { click: () => navigate(`#/liste/${encodeURIComponent(id)}/bearbeiten`) } }, 'Liste bearbeiten'),
+        );
+        return;
+      }
 
       const field = /** @type {HTMLInputElement} */ (h('input', {
         type: 'text', class: 'input share-url', 'data-testid': 'share-url', readonly: true, value: url,
@@ -80,13 +103,9 @@ export default {
         await copyLink(url, field);
       };
 
-      fill(box, 
-        h('div', { class: 'share-head' },
-          h('h2', { class: 'share-title' }, list.name),
-          h('p', { class: 'muted' }, duels > 0
-            ? `Deine Rangliste · ${list.options.length.toLocaleString('de-DE')} Optionen · ${duels.toLocaleString('de-DE')} Duelle · als ${device.name}`
-            : `Liste ohne Duelle · ${list.options.length.toLocaleString('de-DE')} Optionen · als ${device.name}`),
-        ),
+      fill(box,
+        head,
+        truncated,
         qrPart,
         h('p', { class: 'share-how' }, 'Auf dem anderen Handy: Elo-Duell → QR scannen, oder Link öffnen'),
         url.length >= LINK_WARN_URL

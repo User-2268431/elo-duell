@@ -64,8 +64,13 @@ function render() {
   if (!location.hash || location.hash === '#') history.replaceState(null, '', '#/');
   const m = match(location.hash);
   if (!m) { goHomeNotFound(); return; }
-  // Routen mit :id beziehen sich immer auf eine Liste.
-  if (m.params.id !== undefined && ctxRef.store && !ctxRef.store.getList(m.params.id)) { goHomeNotFound(); return; }
+  // Routen mit :id beziehen sich immer auf eine Liste. Nachschlagen nur über eigene Schlüssel (store.getList prüft
+  // Object.hasOwn), damit „#/liste/toString“ oder „#/liste/__proto__“ nicht auf Object.prototype landen (N1).
+  if (m.params.id !== undefined && ctxRef.store) {
+    let exists = false;
+    try { exists = !!ctxRef.store.getList(m.params.id); } catch (e) { console.error(e); }
+    if (!exists) { goHomeNotFound(); return; }
+  }
 
   const root = /** @type {HTMLElement} */ (document.getElementById('app'));
   if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } }
