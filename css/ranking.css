@@ -1,1 +1,36 @@
-/* Eigentümer: C – Rangliste (.rank-*). Siehe docs/ARCHITEKTUR.md §8. */
+/* Eigentümer: C – Rangliste (.rank-*). Siehe docs/ARCHITEKTUR.md §7, §8. */
+
+.rank-view { min-height: calc(100dvh - var(--bar-h) - var(--safe-t) - var(--gap) - 1px); }
+.rank-view > .bottom-bar { margin-top: auto; }
+.rank-hint { font-size: 1rem; }
+.rank-hint-stabil { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); }
+
+.rank-table { padding: 0; overflow: hidden; }
+.rank-head, .rank-row {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 4.5rem 3.75rem;
+  align-items: center; gap: 8px;
+  padding: 0 14px;
+}
+.rank-head {
+  min-height: 44px;
+  color: var(--muted); font-size: 0.875rem; font-weight: 650;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+  background: var(--card-2);
+}
+.rank-list { list-style: none; margin: 0; padding: 0; }
+.rank-row { min-height: var(--tap); }
+.rank-row + .rank-row { border-top: 1px solid var(--line); }
+.rank-place { font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rank-name-cell { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 10px 0; }
+.rank-name { overflow-wrap: anywhere; font-weight: 600; }
+.rank-rating, .rank-duels { text-align: right; font-variant-numeric: tabular-nums; }
+.rank-rating { font-weight: 700; }
+.rank-duels { color: var(--muted); }
+.rank-head .rank-rating, .rank-head .rank-duels { font-weight: 650; }
+
+.rank-top .rank-place { color: var(--accent-text); }
+.rank-top-1 { background: var(--accent-soft); }
+.rank-top-1 .rank-name { font-weight: 750; }
+.rank-row-new .rank-rating { color: var(--muted); font-weight: 500; }
