@@ -59,6 +59,7 @@
   color: var(--muted);
   font-size: 0.9375rem; font-weight: 600;
   pointer-events: none;
+  user-select: none; -webkit-user-select: none;
 }
 
 .duel-actions {
@@ -75,7 +76,11 @@
   font-size: 1rem; font-weight: 600; line-height: 1.2;
 }
 
-.duel-stable { display: flex; flex-direction: column; gap: 10px; border-color: var(--ok); }
+/* Hinweis kompakt; solange er sichtbar ist, teilen sich die Karten den restlichen Platz (kein Überlauf hinter die Leiste). */
+.duel-stable { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-color: var(--ok); }
+.duel-view.has-stable { height: calc(100dvh - var(--bar-h) - var(--safe-t) - 8px - 1px); }
+.duel-view.has-stable .duel-cards { min-height: 0; }
+.duel-view.has-stable .duel-card { min-height: 80px; padding: 12px 20px; font-size: clamp(1.25rem, 6vw, 1.875rem); }
 .duel-stable-title { font-weight: 700; color: var(--ok); }
 .duel-stable-slot:empty { display: none; }
 

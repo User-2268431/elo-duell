@@ -162,15 +162,21 @@ export default {
       show([d.a, d.b]);
     }
 
+    function hideStable() {
+      stableBox.replaceChildren();
+      view.classList.remove('has-stable');
+    }
+
     function showStable() {
       store.setStableShown(id, true);
+      view.classList.add('has-stable');
       stableBox.replaceChildren(h('div', { class: 'card duel-stable', 'data-testid': 'duel-stable', role: 'status' },
         h('p', { class: 'duel-stable-title' }, 'Rangliste ist jetzt aussagekräftig'),
         h('div', { class: 'row' },
           h('button', { type: 'button', class: 'btn btn-primary', 'data-testid': 'duel-stable-ranking',
             on: { click: () => navigate(`#/rangliste/${enc}`) } }, 'Rangliste ansehen'),
           h('button', { type: 'button', class: 'btn', 'data-testid': 'duel-stable-continue',
-            on: { click: () => stableBox.replaceChildren() } }, 'Weiter duellieren'),
+            on: { click: hideStable } }, 'Weiter duellieren'),
         ),
       ));
     }

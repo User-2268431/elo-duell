@@ -3,6 +3,9 @@
 .cmp-head { justify-content: space-between; }
 .cmp-date { flex: 1 1 12em; font-size: 1rem; }
 .cmp-remove { color: var(--danger-text); white-space: nowrap; }
+/* Nicht auf Restbreite strecken (sonst läuft der Text über den Rand): eigene Breite, notfalls in eigene Zeile. */
+.cmp-head > .btn.cmp-remove { flex: 0 0 auto; max-width: 100%; }
+.cmp-head { min-width: 0; }
 .cmp-hint { border-color: var(--accent); background: var(--accent-soft); }
 .cmp-heading { font-size: 1.1875rem; }
 .cmp-intro { font-size: 1rem; }
