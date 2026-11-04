@@ -2,6 +2,7 @@
 import { test, expect } from 'playwright/test';
 import { readFile } from 'node:fs/promises';
 import { resetApp, createList } from './helpers.mjs';
+import { VERSION } from '../../js/version.js';
 
 const KEY = 'elo-duell:state';
 
@@ -16,7 +17,7 @@ test('Sicherung exportieren, Daten löschen, Sicherung importieren', async ({ pa
   await page.goto('./#/einstellungen');
   await page.getByTestId('set-name').fill('Anna');
   await page.getByTestId('set-name').press('Enter');
-  await expect(page.getByTestId('set-version')).toContainText('1.0.0');
+  await expect(page.getByTestId('set-version')).toContainText(VERSION);
   await expect(page.getByTestId('set-storage')).toContainText('2 Listen');
 
   const before = await readState(page);

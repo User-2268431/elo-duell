@@ -1,6 +1,6 @@
 {
   "name": "elo-duell",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Elo-Duell – Optionen im Duell vergleichen und Ranglisten zu zweit abgleichen (PWA, ohne Build-Schritt)",
   "type": "module",

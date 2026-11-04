@@ -77,8 +77,11 @@ const MIGRATIONS = {
   0: (s) => ({ ...s, schema: 1 }),
 };
 
+/** @param {any} o @param {string} k */
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
 /**
- * Ergänzt fehlende optionale Felder und repariert `order`, damit kleine Abweichungen nicht zum Totalverlust führen.
+ * Ergänzt fehlende optionale Felder, damit kleine Abweichungen nicht zum Totalverlust führen (wird nicht als Schaden gezählt).
  * @param {any} s @returns {any}
  */
 function normalize(s) {
@@ -101,20 +104,78 @@ function normalize(s) {
       }
     }
   }
-  const ids = Object.keys(s.lists);
-  const order = Array.isArray(s.order) ? s.order.filter((/** @type {any} */ id, /** @type {number} */ i, /** @type {any[]} */ a) =>
-    typeof id === 'string' && id in s.lists && a.indexOf(id) === i) : [];
-  for (const id of ids) if (!order.includes(id)) order.push(id);
-  s.order = order;
   return s;
 }
 
+/** order reparieren: nur bekannte, eindeutige IDs; fehlende Listen hinten anhängen. @param {any} s */
+function fixOrder(s) {
+  if (!isObj(s.lists)) return;
+  const ids = Object.keys(s.lists);
+  const order = Array.isArray(s.order) ? s.order.filter((/** @type {any} */ id, /** @type {number} */ i, /** @type {any[]} */ a) =>
+    typeof id === 'string' && own(s.lists, id) && a.indexOf(id) === i) : [];
+  for (const id of ids) if (!order.includes(id)) order.push(id);
+  s.order = order;
+}
+
+/** @param {any} v @returns {number} gültiger Zähler (ganzzahlig ≥ 0) */
+const toCount = (v) => (Number.isFinite(v) ? Math.max(0, Math.round(v)) : 0);
+
 /**
- * Kette v0→v1…; wirft SchemaError bei Unbrauchbarem. Gibt immer ein frisches Objekt zurück.
- * @param {any} raw geparstes JSON (oder JSON-String)
- * @returns {AppState}
+ * Repariert oder entfernt einzelne ungültige Teile (H1), statt den ganzen State zu verwerfen.
+ * Nicht reparierbar bleibt nur, was validateState danach noch meldet (z. B. lists kein Objekt).
+ * @param {any} s @returns {number} Anzahl entfernter oder reparierter Einträge
  */
-export function migrate(raw) {
+function repair(s) {
+  let n = 0;
+  if (!isObj(s.device) || !isStr(s.device.id) || !s.device.id) {
+    const name = isObj(s.device) && isStr(s.device.name) ? s.device.name : '';
+    s.device = { id: newId('d_', 10), name };
+    n++;
+  }
+  if (!isObj(s.lists)) return n;
+  for (const [key, l] of Object.entries(s.lists)) {
+    if (!isObj(l) || key === '__proto__') { delete s.lists[key]; n++; continue; }
+    if (l.id !== key) { l.id = key; n++; }
+    if (!isStr(l.name)) { l.name = 'Liste'; n++; }
+    if (!l.aliases.every(isStr)) { l.aliases = l.aliases.filter(isStr); n++; }
+    if (!Array.isArray(l.options)) { l.options = []; n++; }
+    const optIds = new Set();
+    const before = l.options.length;
+    l.options = l.options.filter((/** @type {any} */ o) => {
+      if (!isObj(o) || !isStr(o.id) || !o.id || !isStr(o.name) || optIds.has(o.id)) return false;
+      optIds.add(o.id);
+      return true;
+    });
+    n += before - l.options.length;
+    for (const o of l.options) {
+      if (!isNum(o.rating)) { o.rating = 1000; n++; }
+      for (const f of ['duels', 'wins', 'draws', 'losses']) if (!isCount(o[f])) { o[f] = toCount(o[f]); n++; }
+    }
+    const hBefore = l.history.length;
+    l.history = l.history.filter((/** @type {any} */ d) => isObj(d) && optIds.has(d.a) && optIds.has(d.b) && d.a !== d.b
+      && [1, 0.5, 0].includes(d.s) && isNum(d.da) && isNum(d.db) && isNum(d.t));
+    n += hBefore - l.history.length;
+    const pBefore = l.partners.length;
+    l.partners = l.partners.filter((/** @type {any} */ pr) => isObj(pr) && isStr(pr.deviceId) && pr.deviceId && Array.isArray(pr.options));
+    n += pBefore - l.partners.length;
+    for (const pr of l.partners) {
+      if (!isStr(pr.name)) { pr.name = ''; n++; }
+      if (!isNum(pr.sentAt)) { pr.sentAt = 0; n++; }
+      if (!isNum(pr.receivedAt)) { pr.receivedAt = pr.sentAt; n++; }
+      const oBefore = pr.options.length;
+      pr.options = pr.options.filter((/** @type {any} */ o) => isObj(o) && isStr(o.name) && isNum(o.rating) && isNum(o.duels));
+      n += oBefore - pr.options.length;
+    }
+  }
+  return n;
+}
+
+/**
+ * Wie migrate, meldet aber zusätzlich, wie viele beschädigte Einträge entfernt oder repariert wurden.
+ * @param {any} raw geparstes JSON (oder JSON-String)
+ * @returns {{state:AppState, repaired:number}}
+ */
+export function migrateWithReport(raw) {
   let s = raw;
   if (typeof s === 'string') {
     try { s = JSON.parse(s); } catch { throw new SchemaError('Die Daten sind kein gültiges JSON.'); }
@@ -131,12 +192,24 @@ export function migrate(raw) {
     version++;
   }
   s = normalize(s);
+  const repaired = repair(s);
+  fixOrder(s);
   const errors = validateState(s);
   if (errors.length) {
     const more = errors.length > 3 ? ` (und ${errors.length - 3} weitere)` : '';
     throw new SchemaError('Die Daten sind fehlerhaft: ' + errors.slice(0, 3).join('; ') + more);
   }
-  return /** @type {AppState} */ (s);
+  return { state: /** @type {AppState} */ (s), repaired };
+}
+
+/**
+ * Kette v0→v1…, repariert einzelne ungültige Einträge; wirft SchemaError nur bei Unbrauchbarem.
+ * Gibt immer ein frisches Objekt zurück.
+ * @param {any} raw geparstes JSON (oder JSON-String)
+ * @returns {AppState}
+ */
+export function migrate(raw) {
+  return migrateWithReport(raw).state;
 }
 
 /** @param {any} n */ const isNum = (n) => typeof n === 'number' && Number.isFinite(n);
@@ -157,7 +230,7 @@ export function validateState(s) {
   else {
     const seen = new Set();
     for (const id of s.order) {
-      if (!isStr(id) || !(id in s.lists)) e.push(`order: unbekannte Liste ${String(id)}`);
+      if (!isStr(id) || !own(s.lists, id)) e.push(`order: unbekannte Liste ${String(id)}`);
       else if (seen.has(id)) e.push(`order: doppelte Liste ${id}`);
       seen.add(id);
     }

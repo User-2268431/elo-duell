@@ -94,14 +94,26 @@ export default {
         clearPendingImport();
         const enc = encodeURIComponent(listId);
         if (partnerDuels > 0) {
-          const saved = store.savePartner(listId, toPartnerRanking(share, Date.now()));
+          /** @type {boolean|null} null = konnte nicht gespeichert werden */ let saved = null;
+          try {
+            saved = store.savePartner(listId, toPartnerRanking(share, Date.now()));
+          } catch (err) {
+            console.error(err);
+          }
           const list = store.getList(listId);
           const own = list ? progress(list).level : 'start';
-          if (own === 'start') {
-            toast(`Rangliste von ${who} gespeichert – duelliere jetzt selbst`);
+          // Toast nur „gespeichert“, wenn wirklich gespeichert (N2).
+          const status = saved === null
+            ? `Rangliste von ${who} konnte nicht gespeichert werden`
+            : saved ? `Rangliste von ${who} gespeichert` : `Du hast schon einen neueren Stand von ${who}`;
+          if (saved === null) {
+            toast(status);
+            navigate(`#/liste/${enc}`, { replace: true });
+          } else if (own === 'start') {
+            toast(`${status} – duelliere jetzt selbst`);
             navigate(`#/duell/${enc}`, { replace: true });
           } else {
-            toast(saved ? `Rangliste von ${who} gespeichert` : `Du hast schon einen neueren Stand von ${who}`);
+            toast(status);
             navigate(`#/vergleich/${enc}/${encodeURIComponent(share.d)}`, { replace: true });
           }
         } else {

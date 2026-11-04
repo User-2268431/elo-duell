@@ -234,3 +234,43 @@ test('Größe: 30 Optionen bleiben deutlich unter 1000 Zeichen URL', async () =>
   const url = buildShareUrl(await encodeShare(d), { origin: 'https://user-2268431.github.io', pathname: '/elo-duell/' });
   assert.ok(url.length < 700, `URL-Länge ${url.length}`);
 });
+
+test('riesige, aber endliche Zahlen werden abgewiesen (K1)', async () => {
+  const j = (/** @type {any} */ d) => '1.j.' + b64url(JSON.stringify(d));
+  for (const t of [1e306, -1e306, -1, 4102444801, 1e13]) {
+    await rejectsWith(decodeShare(j(sample({ t }))), 'format');
+  }
+  await rejectsWith(decodeShare(j(sample({ o: [['A', 1e308, 1]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', -1e308, 1]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', 5001, 1]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', -1, 1]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', 1000, 1e308]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', 1000, 100001]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', 1000, -1]] }))), 'format');
+  await rejectsWith(decodeShare(j(sample({ o: [['A', 1000, 1.5]] }))), 'format');
+  // Grenzen selbst sind erlaubt; sentAt bleibt endlich
+  const ok = await decodeShare(j(sample({ t: 4102444800, o: [['A', 5000.4, 100000], ['B', -0.4, 0]] })));
+  assert.deepEqual(ok.o.map((o) => o[2]), [100000, 0]);
+  const p = toPartnerRanking(ok, 1);
+  assert.ok(Number.isFinite(p.sentAt));
+  assert.equal(JSON.parse(JSON.stringify(p)).sentAt, 4102444800000);
+  assert.equal((await decodeShare(j(sample({ t: 0 })))).t, 0);
+});
+
+test('toShareData: Wertungen und Duelle in den erlaubten Bereich, Namen an Codepoint-Grenzen (N4)', async () => {
+  const list = {
+    id: 'l_x', name: 'a'.repeat(119) + '😀', aliases: [], createdAt: 0, updatedAt: 0, stableShown: false, history: [], partners: [],
+    options: [
+      { id: 'o_1', name: 'b'.repeat(119) + '😀', rating: 9999, duels: 3, wins: 3, draws: 0, losses: 0 },
+      { id: 'o_2', name: '😀'.repeat(120), rating: -20, duels: 3, wins: 0, draws: 0, losses: 3 },
+    ],
+  };
+  const d = toShareData(list, { id: 'd_me', name: 'Anna' }, 1762290000999);
+  assert.deepEqual(d.o.map((o) => o[1]), [5000, 0]);
+  assert.equal(d.n, list.name);
+  assert.equal(d.o[0][0], list.options[0].name);
+  assert.equal(d.o[1][0], '😀'.repeat(120));
+  const back = await decodeShare(await encodeShare(d));
+  assert.equal(back.o[1][0], '😀'.repeat(120), '120 Emoji (240 UTF-16-Einheiten) gehen durch');
+  await rejectsWith(decodeShare(await encodeShare(sample({ o: [['😀'.repeat(121), 1000, 1]] }))), 'format');
+});

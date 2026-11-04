@@ -22,7 +22,7 @@
 
 /* ---------- Anlegen / Bearbeiten ---------- */
 .lists-count { min-height: 1.5em; }
-.lists-count-warn { color: var(--danger); }
+.lists-count-warn { color: var(--danger-text); }
 .lists-section { margin-top: 8px; }
 .lists-section-title { font-size: 1.0625rem; color: var(--muted); font-weight: 650; }
 .lists-opts {
@@ -38,7 +38,7 @@
 .lists-opt + .lists-opt { border-top: 1px solid var(--line); }
 .lists-opt-name { flex: 1; min-width: 0; overflow-wrap: anywhere; padding: 8px 0; }
 .lists-opt-duels { font-size: 0.9375rem; white-space: nowrap; margin-right: 4px; }
-.lists-opt-remove { color: var(--danger); }
+.lists-opt-remove { color: var(--danger-text); }
 .lists-opt-empty { padding: 16px; }
 .lists-danger-zone { gap: 10px; }
 

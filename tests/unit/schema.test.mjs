@@ -1,7 +1,7 @@
 // Eigentümer: B – Schema, Default-State, Migration, Validierung (docs/ARCHITEKTUR.md §3, §4B).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SCHEMA, SchemaError, defaultState, migrate, validateState, newId, EXAMPLE_LIST_ID } from '../../js/data/schema.js';
+import { SCHEMA, SchemaError, defaultState, migrate, migrateWithReport, validateState, newId, EXAMPLE_LIST_ID } from '../../js/data/schema.js';
 
 test('defaultState ist gültig und enthält die Beispielliste', () => {
   const s = defaultState(123);
@@ -79,4 +79,38 @@ test('validateState prüft Partner', () => {
   assert.deepEqual(validateState(s), []);
   s.lists[EXAMPLE_LIST_ID].partners[0].options[0].rating = 'hoch';
   assert.ok(validateState(s).some((e) => /Partner/.test(e)));
+});
+
+test('migrateWithReport: gültiger State → nichts repariert', () => {
+  const s = defaultState();
+  const r = migrateWithReport(s);
+  assert.equal(r.repaired, 0);
+  assert.deepEqual(r.state, s);
+});
+
+test('migrateWithReport: einzelne ungültige Teile werden repariert oder entfernt statt alles zu verwerfen (H1)', () => {
+  const s = defaultState();
+  const l = s.lists[EXAMPLE_LIST_ID];
+  l.options.push(null);                                                     // entfernt
+  l.options[0].wins = 1.5;                                                  // repariert
+  l.history.push({ a: l.options[0].id, b: l.options[0].id, s: 1, da: 1, db: -1, t: 1 }); // entfernt
+  l.partners.push({ deviceId: 'd_x', name: 'A', sentAt: null, receivedAt: 2,
+    options: [{ name: 'Rom', rating: 1000, duels: 1 }, { name: 'Kreta', rating: null, duels: 1 }] }); // 2× repariert
+  l.aliases.push(5);                                                        // repariert
+  s.lists.toString = { id: 'toString' };                                    // Liste ohne options → repariert (name+options)
+  s.order.push('constructor');
+  const r = migrateWithReport(s);
+  assert.equal(r.repaired, 8);
+  assert.deepEqual(validateState(r.state), []);
+  assert.deepEqual(r.state.order, [EXAMPLE_LIST_ID, 'toString']);
+  assert.equal(r.state.lists[EXAMPLE_LIST_ID].options.length, 8);
+  assert.equal(r.state.lists[EXAMPLE_LIST_ID].options[0].wins, 2);
+  assert.deepEqual(r.state.lists[EXAMPLE_LIST_ID].partners[0].options.map((o) => o.name), ['Rom']);
+  assert.equal(r.state.lists[EXAMPLE_LIST_ID].partners[0].sentAt, 0);
+});
+
+test('validateState: order mit Prototyp-Namen ist ungültig (N1)', () => {
+  const s = defaultState();
+  s.order.push('toString');
+  assert.ok(validateState(s).some((e) => /toString/.test(e)));
 });

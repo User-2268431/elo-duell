@@ -12,9 +12,13 @@
   --accent-fg: #ffffff;
   --accent-text: #4338ca;    /* Akzent als Schrift/Rahmen auf hellem Grund */
   --accent-soft: #e8e7fd;
-  --danger: #c0262d;
+  --danger: #c0262d;         /* Fläche/Rahmen; Weiß darauf 5,9:1 */
   --danger-fg: #ffffff;
-  --ok: #18794e;
+  --danger-text: #a51f25;    /* Warnschrift: ≥ 5,1:1 auch auf getönten Flächen */
+  --ok: #146c45;             /* auch als Schrift auf getöntem Badge ≥ 5:1 */
+  --toast-bg: #26262f;
+  --toast-fg: #f4f4f8;
+  --toast-action: #a5b4fc;
   --shadow: 0 1px 2px rgb(20 20 40 / 0.06), 0 4px 14px rgb(20 20 40 / 0.06);
   --radius: 16px;
   --radius-sm: 12px;
@@ -40,9 +44,13 @@
     --accent-fg: #ffffff;
     --accent-text: #a5b4fc;
     --accent-soft: #2a2950;
-    --danger: #e5484d;
+    --danger: #c9353b;        /* Weiß darauf 5,2:1 */
     --danger-fg: #ffffff;
+    --danger-text: #ff8a8f;   /* Warnschrift auf --card/--card-2 ≥ 5,8:1 */
     --ok: #3dd68c;
+    --toast-bg: #ececf3;
+    --toast-fg: #17171f;
+    --toast-action: #4338ca;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
   }
 }
@@ -151,7 +159,7 @@ a { color: var(--accent-text); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .btn-danger { background: var(--danger); border-color: var(--danger); color: var(--danger-fg); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--accent-text); }
-.btn-outline-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn-outline-danger { background: transparent; border-color: var(--danger); color: var(--danger-text); }
 .btn-block { display: flex; width: 100%; }
 .btn-icon { padding: 0; width: var(--tap); }
 #bar .btn-ghost { color: var(--fg); }
@@ -219,7 +227,7 @@ a { color: var(--accent-text); }
   border: 1px solid var(--line);
 }
 .banner-text { flex: 1 1 12em; font-size: 1rem; }
-.banner-action { min-height: 48px; }
+.banner-action { min-height: var(--tap); }
 
 /* ---------- Toast ---------- */
 #toast {
@@ -230,17 +238,15 @@ a { color: var(--accent-text); }
   display: flex; align-items: center; gap: 8px;
   padding: 10px 10px 10px 18px;
   border-radius: var(--radius-sm);
-  background: #26262f; color: #f4f4f8;
+  background: var(--toast-bg); color: var(--toast-fg);
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
   opacity: 0; pointer-events: none;
   transition: opacity 160ms ease, transform 160ms ease;
 }
 #toast:empty { padding: 0; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-@media (prefers-color-scheme: dark) { #toast { background: #ececf3; color: #17171f; } }
 .toast-text { padding: 6px 0; }
-#toast .toast-action { color: #a5b4fc; min-height: 48px; padding: 0 12px; }
-@media (prefers-color-scheme: dark) { #toast .toast-action { color: #4338ca; } }
+#toast .toast-action { color: var(--toast-action); min-height: var(--tap); padding: 0 12px; }
 
 /* ---------- Dialog ---------- */
 dialog.dlg {

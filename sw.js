@@ -1,6 +1,6 @@
 // Eigentümer: E – Service Worker (docs/ARCHITEKTUR.md §8, §9). Klassisches Skript, kein Modul.
 // VERSION muss gleich js/version.js sein; bei jedem Deploy erhöhen.
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const PREFIX = 'elo-duell-';
 const CACHE = PREFIX + VERSION;
 

@@ -65,3 +65,17 @@ Offline-Navigation mit Fragment, keine externen Laufzeit-Abhängigkeiten, keine 
 **N6 – Testlücken gegenüber §10** (bestätigt: ja)
 - Es fehlen `tests/e2e/abnahme.spec.mjs` (M9) und der Dunkelmodus-Test (`colorScheme:'dark'`).
 - Es gibt keinen Codec-Test für riesige, aber endliche Zahlen (siehe K1).
+
+## Behebung (04.11.2026)
+
+- **K1 – behoben:** Codec prüft `0 ≤ t ≤ 4102444800`, Wertung gerundet 0..5000, Duelle ganzzahlig 0..100000 (sonst `format`); `savePartner` nimmt nur endliche Zahlen; Unit-Tests für riesige Zahlen (codec, store).
+- **H1 – behoben:** `migrateWithReport` repariert/entfernt einzelne Listen, Optionen, Duelle, Partner und meldet „X beschädigte Einträge entfernt oder repariert“; Rohinhalt wird nie überschrieben (`elo-duell:defekt` + `elo-duell:defekt:<ms>`, max. 3, älteste bleibt), Geräte-ID wird gerettet; Einstellungen zeigen „Beschädigte Daten herunterladen“ nur bei Vorhandensein.
+- **M1 – behoben:** Duell sperrt Eingaben (Karten, Gleich gut, Überspringen, Rückgängig, Tastatur) 250 ms per Zeitstempel und `pointer-events:none`; `dblclick` ergibt 1 Duell; `playDuels` unverändert grün.
+- **M2 – behoben:** `--danger` dunkel `#c9353b` (Weiß 5,2:1), neue `--danger-text` (hell `#a51f25`, dunkel `#ff8a8f`) für alle roten Schriften, `--ok` hell `#146c45` (Badge 5,05:1); Toast-Farben als Variablen.
+- **N1 – behoben:** Store schlägt Listen nur über `hasOwnProperty` nach (`getList`, `mustList`, `createList`, `deleteList`, `listLists`, `findMatch`, Schema-`order`); `__proto__` als ID wird zum Alias; Router fängt Fehler ab.
+- **N2 – behoben:** `sentAt` > jetzt + 1 Tag wird auf jetzt begrenzt, alter Zukunftsstand blockiert nicht mehr; Import-Toast sagt nur bei `saved === true` „gespeichert“.
+- **N3 – behoben:** Teilen zeigt bei > 500 Optionen einen Hinweis (`share-truncated`); Payload > `MAX_PAYLOAD` ergibt eine klare Meldung (`share-too-long`) statt eines unbrauchbaren Links.
+- **N4 – behoben:** `cleanName`, Codec-`clip` und Namensprüfung arbeiten mit 120 Codepoints (wie `parseOptionLines`); keine halben Surrogatpaare mehr.
+- **N5 – teilweise:** `.toast-action` und `.banner-action` haben jetzt `min-height: var(--tap)`; der Inline-Link in list.js wurde nicht geändert.
+- **N6 – nicht (hier):** wurde von anderer Seite ergänzt (`abnahme.spec.mjs`, `dark.spec.mjs`); Codec-Test für riesige Zahlen ist enthalten.
+- Zusätzlich: Vergleich „Partner entfernen“ läuft nicht mehr über den Rand (412 px); Duell mit eingeblendetem Stabil-Hinweis passt in den Viewport, beide Karten liegen über der Button-Leiste.

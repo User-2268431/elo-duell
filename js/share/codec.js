@@ -9,6 +9,8 @@ export const MAX_PAYLOAD = 65536, MAX_INFLATED = 262144, MAX_OPTIONS = 500, MAX_
 /** Höchstzahl Aliase im Payload (§5). */
 export const MAX_ALIASES = 20;
 const MAX_ID = 64;
+/** Plausible Grenzen gegen manipulierte Links (K1): Zeitstempel in Sekunden bis 01.01.2100, Wertung nach Rundung, Duelle. */
+export const MAX_T = 4102444800, MIN_RATING = 0, MAX_RATING = 5000, MAX_DUELS = 100000;
 
 /** @type {Record<string,string>} */
 const MESSAGES = {
@@ -101,6 +103,8 @@ async function inflateRaw(bytes) {
 // ---------- Prüfung ----------
 /** @param {unknown} v @param {number} max @returns {v is string} */
 const isStr = (v, max) => typeof v === 'string' && v.length <= max;
+/** Namen: höchstens max Codepoints (wie parseOptionLines/cleanName). @param {unknown} v @param {number} max @returns {v is string} */
+const isName = (v, max) => typeof v === 'string' && v.length <= 2 * max && Array.from(v).length <= max;
 /** @param {unknown} v @returns {v is number} */
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
@@ -111,21 +115,24 @@ function validate(raw) {
   if (raw.v !== 1) throw new ShareError('format');
   if (!isStr(raw.l, MAX_ID) || !raw.l) throw new ShareError('format');
   if (!isStr(raw.d, MAX_ID) || !raw.d) throw new ShareError('format');
-  if (!isStr(raw.n, MAX_NAME)) throw new ShareError('format');
-  if (!isStr(raw.p, MAX_NAME)) throw new ShareError('format');
-  if (!isNum(raw.t)) throw new ShareError('format');
+  if (!isName(raw.n, MAX_NAME)) throw new ShareError('format');
+  if (!isName(raw.p, MAX_NAME)) throw new ShareError('format');
+  if (!isNum(raw.t) || raw.t < 0 || raw.t > MAX_T) throw new ShareError('format');
   if (!Array.isArray(raw.o)) throw new ShareError('format');
   if (raw.o.length > MAX_OPTIONS) throw new ShareError('zu-gross');
   /** @type {[string, number, number][]} */
   const o = raw.o.map((/** @type {any} */ e) => {
     if (!Array.isArray(e) || e.length < 3) throw new ShareError('format');
     const [name, rating, duels] = e;
-    if (!isStr(name, MAX_NAME) || !name.trim()) throw new ShareError('format');
+    if (!isName(name, MAX_NAME) || !name.trim()) throw new ShareError('format');
     if (!isNum(rating) || !isNum(duels)) throw new ShareError('format');
-    return [name, rating, Math.max(0, Math.round(duels))];
+    const r = Math.round(rating);
+    if (r < MIN_RATING || r > MAX_RATING) throw new ShareError('format');
+    if (!Number.isInteger(duels) || duels < 0 || duels > MAX_DUELS) throw new ShareError('format');
+    return [name, rating, duels];
   });
   /** @type {ShareData} */
-  const out = { v: 1, l: raw.l, n: raw.n, p: raw.p, d: raw.d, t: raw.t, o };
+  const out = { v: 1, l: raw.l, n: raw.n, p: raw.p, d: raw.d, t: Math.floor(raw.t), o };
   if (raw.a !== undefined) {
     if (!Array.isArray(raw.a) || !raw.a.every((/** @type {unknown} */ x) => isStr(x, MAX_ID))) throw new ShareError('format');
     out.a = raw.a.slice(0, MAX_ALIASES);
@@ -186,8 +193,13 @@ export function extractPayload(textOrUrl) {
   return PAYLOAD_RE.test(bare) && bare.length > 4 ? bare : null;
 }
 
-/** @param {string} s @returns {string} */
-const clip = (s) => String(s ?? '').slice(0, MAX_NAME);
+/** Kürzt auf MAX_NAME Codepoints (keine halben Surrogatpaare). @param {string} s @returns {string} */
+const clip = (s) => {
+  const str = String(s ?? '');
+  if (str.length <= MAX_NAME) return str;
+  const cps = Array.from(str);
+  return cps.length <= MAX_NAME ? str : cps.slice(0, MAX_NAME).join('');
+};
 
 /** @param {List} list @param {Device} device @param {number} now ms @returns {ShareData} inkl. a = list.aliases */
 export function toShareData(list, device, now) {
@@ -202,7 +214,9 @@ export function toShareData(list, device, now) {
     p: clip(device.name),
     d: device.id,
     t: Math.floor(now / 1000),
-    o: sorted.slice(0, MAX_OPTIONS).map((o) => [clip(o.name), Math.round(o.rating), o.duels]),
+    o: sorted.slice(0, MAX_OPTIONS).map((o) => [clip(o.name),
+      Math.min(MAX_RATING, Math.max(MIN_RATING, Math.round(o.rating))),
+      Math.min(MAX_DUELS, Math.max(0, Math.round(o.duels) || 0))]),
     a: (list.aliases || []).slice(-MAX_ALIASES),
   };
   return data;

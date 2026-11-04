@@ -1,6 +1,6 @@
 // Eigentümer: B – Sicherung exportieren/importieren (docs/ARCHITEKTUR.md §4B).
 // In Node importierbar; nur downloadBackup braucht das DOM.
-import { migrate, SCHEMA, SchemaError } from './schema.js';
+import { migrateWithReport, SCHEMA, SchemaError } from './schema.js';
 
 /** @typedef {import('../types.js').AppState} AppState */
 
@@ -21,10 +21,29 @@ export function backupFileName(date = new Date()) {
 
 /** Blob + <a download>. @param {AppState} state @returns {void} */
 export function downloadBackup(state) {
-  const url = URL.createObjectURL(exportBackup(state));
+  downloadBlob(exportBackup(state), backupFileName());
+}
+
+/** @param {number} [at] ms; 0/fehlend = heute @returns {string} elo-duell-beschaedigt-JJJJ-MM-TT[-hhmmss].json */
+export function brokenFileName(at) {
+  const date = at ? new Date(at) : new Date();
+  const p = (/** @type {number} */ n) => String(n).padStart(2, '0');
+  const day = `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+  return at ? `elo-duell-beschaedigt-${day}-${p(date.getHours())}${p(date.getMinutes())}${p(date.getSeconds())}.json`
+    : `elo-duell-beschaedigt-${day}.json`;
+}
+
+/** Beiseitegelegten Rohinhalt unverändert als Datei speichern (H1). @param {string} raw @param {number} [at] @returns {void} */
+export function downloadBroken(raw, at) {
+  downloadBlob(new Blob([raw], { type: 'application/json' }), brokenFileName(at));
+}
+
+/** @param {Blob} blob @param {string} fileName @returns {void} */
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = backupFileName();
+  a.download = fileName;
   a.rel = 'noopener';
   a.style.display = 'none';
   document.body.append(a);
@@ -40,6 +59,14 @@ export function downloadBackup(state) {
  * @param {File|Blob} file @returns {Promise<AppState>}
  */
 export async function readBackupFile(file) {
+  return (await readBackupFileDetailed(file)).state;
+}
+
+/**
+ * Wie readBackupFile, meldet zusätzlich die Zahl reparierter/entfernter Einträge (H1).
+ * @param {File|Blob} file @returns {Promise<{state:AppState, repaired:number}>}
+ */
+export async function readBackupFileDetailed(file) {
   if (!file || typeof file.text !== 'function') throw new SchemaError('Keine Datei ausgewählt.');
   if (file.size > MAX_BACKUP_BYTES) throw new SchemaError('Die Datei ist zu groß für eine Elo-Duell-Sicherung.');
   let text;
@@ -63,7 +90,7 @@ export async function readBackupFile(file) {
     throw new SchemaError('Die Datei ist keine Elo-Duell-Sicherung.');
   }
   try {
-    return migrate(raw);
+    return migrateWithReport(raw);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new SchemaError(`Die Sicherung ist beschädigt und wurde nicht übernommen. ${msg}`);

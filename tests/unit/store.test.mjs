@@ -1,7 +1,7 @@
 // Eigentümer: B – Store-Tests mit Fake-Storage (docs/ARCHITEKTUR.md §4B, §10).
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { createStore, STORAGE_KEY, BROKEN_KEY } from '../../js/data/store.js';
+import { createStore, STORAGE_KEY, BROKEN_KEY, BROKEN_PREFIX, MAX_BROKEN } from '../../js/data/store.js';
 import { defaultState, EXAMPLE_LIST_ID, validateState } from '../../js/data/schema.js';
 
 class FakeStorage {
@@ -83,9 +83,79 @@ describe('init', () => {
     assert.equal(validateState(saved(storage)).length, 0);
   });
 
-  test('unbrauchbarer State (Schema-Fehler) wird ebenfalls beiseitegelegt; defekt überschreibt älteren', () => {
-    const { storage } = mk({ [STORAGE_KEY]: JSON.stringify({ schema: 1, lists: 5 }), [BROKEN_KEY]: 'alt' });
-    assert.equal(storage.getItem(BROKEN_KEY), JSON.stringify({ schema: 1, lists: 5 }));
+  test('unbrauchbarer State (Schema-Fehler) wird beiseitegelegt, ohne einen älteren Defekt zu überschreiben (H1)', () => {
+    const bad = JSON.stringify({ schema: 1, lists: 5 });
+    const { storage, store, res } = mk({ [STORAGE_KEY]: bad, [BROKEN_KEY]: 'alt' });
+    assert.equal(storage.getItem(BROKEN_KEY), 'alt');
+    const extra = [...storage.map.keys()].filter((k) => k.startsWith(BROKEN_PREFIX));
+    assert.equal(extra.length, 1);
+    assert.equal(storage.getItem(extra[0]), bad);
+    assert.match(res.warning, /Einstellungen herunterladen/);
+    assert.deepEqual(store.listBroken().map((e) => e.key), [BROKEN_KEY, extra[0]]);
+    assert.equal(store.getBroken(extra[0]), bad);
+    assert.equal(store.getBroken(STORAGE_KEY), null, 'nur Defekt-Ablagen lesbar');
+  });
+
+  test('höchstens drei Defekt-Ablagen; die älteste bleibt, gleicher Inhalt wird nicht doppelt abgelegt', () => {
+    const storage = new FakeStorage();
+    let t = 5000;
+    const boot = (raw) => {
+      storage.setItem(STORAGE_KEY, raw);
+      const s = createStore({ storage, now: () => (t += 10) });
+      s.init();
+      return s;
+    };
+    boot('{eins'); boot('{zwei'); boot('{drei'); boot('{drei');
+    let s = boot('{vier');
+    const contents = s.listBroken().map((e) => s.getBroken(e.key));
+    assert.equal(contents.length, MAX_BROKEN);
+    assert.equal(contents[0], '{eins', 'älteste bleibt');
+    assert.ok(contents.includes('{zwei'));
+    assert.equal(contents[2], '{vier', 'jüngste ersetzt');
+  });
+
+  test('ein ungültiger Partner (sentAt null, K1) verwirft nicht alles: reparieren, warnen, Original sichern', () => {
+    const st = defaultState(1);
+    st.device = { id: 'd_meins00001', name: 'Anna' };
+    st.lists.l_zweite0001 = { ...structuredClone(st.lists[EXAMPLE_LIST_ID]), id: 'l_zweite0001', name: 'Zweite' };
+    st.order.push('l_zweite0001');
+    const l = st.lists[EXAMPLE_LIST_ID];
+    l.partners.push({ deviceId: 'd_eve', name: 'Eve', sentAt: null, receivedAt: 2, options: [{ name: 'Rom', rating: 1000, duels: 1 }] });
+    l.partners.push({ deviceId: 7, name: 'kaputt', sentAt: 1, receivedAt: 2, options: [] });
+    l.history.push({ a: 'o_gibtsnicht', b: l.options[0].id, s: 1, da: 16, db: -16, t: 1 });
+    l.options.push({ id: l.options[0].id, name: 'Doppelt', rating: 1000, duels: 0, wins: 0, draws: 0, losses: 0 });
+    l.options[1].rating = null;
+    st.lists.l_muell00001 = 'kein Objekt';
+    st.order.push('l_muell00001');
+    const raw = JSON.stringify(st);
+    const { store, storage, res } = mk({ [STORAGE_KEY]: raw });
+    assert.match(res.warning, /6 beschädigte Einträge entfernt oder repariert/);
+    assert.equal(storage.getItem(BROKEN_KEY), raw, 'Original liegt beiseite');
+    assert.deepEqual(store.listLists().map((x) => x.id).sort(), [EXAMPLE_LIST_ID, 'l_zweite0001']);
+    assert.equal(store.getDevice().id, 'd_meins00001');
+    const fixed = store.getList(EXAMPLE_LIST_ID);
+    assert.equal(fixed.options.length, 8);
+    assert.equal(fixed.options[1].rating, 1000);
+    assert.equal(fixed.history.length, 0);
+    assert.deepEqual(fixed.partners.map((x) => [x.deviceId, x.sentAt]), [['d_eve', 0]]);
+    assert.equal(validateState(saved(storage)).length, 0, 'reparierter Stand gespeichert');
+  });
+
+  test('völlig unbrauchbarer State: Geräte-ID wird aus dem Rohinhalt gerettet', () => {
+    const { store } = mk({ [STORAGE_KEY]: JSON.stringify({ schema: 1, device: { id: 'd_alt0000001', name: 'Bert' }, lists: 'x' }) });
+    assert.equal(store.getDevice().id, 'd_alt0000001');
+    assert.equal(store.getDevice().name, 'Bert');
+    assert.equal(store.listLists()[0].id, EXAMPLE_LIST_ID);
+  });
+
+  test('Liste mit Infinity-sentAt übersteht einen Neustart (K1)', () => {
+    const { store, storage } = mk();
+    assert.throws(() => store.savePartner(EXAMPLE_LIST_ID, { deviceId: 'd_eve', name: 'Eve', sentAt: Infinity, receivedAt: 1, options: [] }));
+    assert.throws(() => store.savePartner(EXAMPLE_LIST_ID, { deviceId: 'd_eve', name: 'Eve', sentAt: 1, receivedAt: 1, options: [{ name: 'Rom', rating: -Infinity, duels: 1 }] }));
+    assert.throws(() => store.savePartner(EXAMPLE_LIST_ID, { deviceId: 'd_eve', name: 'Eve', sentAt: NaN, receivedAt: 1, options: [] }));
+    const again = createStore({ storage, now: clock() });
+    assert.equal(again.init().warning, null);
+    assert.equal(again.listBroken().length, 0);
   });
 
   test('Store-Import fasst keinen Storage an (Node)', async () => {
@@ -275,6 +345,36 @@ describe('Listen und Optionen', () => {
     assert.deepEqual(store.listLists().map((l) => l.id), ['l_c', 'l_a', 'l_b', 'l_d']);
   });
 
+  test('Prototyp-Namen als Listen-ID (N1)', () => {
+    const { store } = mk();
+    for (const id of ['toString', '__proto__', 'constructor', 'hasOwnProperty']) {
+      assert.equal(store.getList(id), undefined, id);
+      assert.throws(() => store.addOptions(id, ['x']), /nicht gefunden/, id);
+      store.deleteList(id);
+    }
+    const l = store.createList('Proto', ['A', 'B'], 'toString');
+    assert.equal(l.id, 'toString');
+    assert.equal(store.getList('toString').name, 'Proto');
+    const l2 = store.createList('Proto2', ['A', 'B'], '__proto__');
+    assert.notEqual(l2.id, '__proto__');
+    assert.deepEqual(store.getList(l2.id).aliases, ['__proto__']);
+    assert.equal(store.listLists().length, 3);
+  });
+
+  test('Namen werden an Codepoint-Grenzen auf 120 Zeichen gekürzt (N4)', () => {
+    const { store } = mk();
+    const l = store.createList('😀'.repeat(130), ['a'.repeat(119) + '😀', 'b'.repeat(119) + '😀x', 'c'.repeat(200)]);
+    const names = l.options.map((o) => o.name);
+    assert.equal(names[0], 'a'.repeat(119) + '😀');
+    assert.equal(names[1], 'b'.repeat(119) + '😀');
+    assert.equal(names[2], 'c'.repeat(120));
+    assert.equal(l.name, '😀'.repeat(120));
+    for (const n of [...names, l.name]) assert.ok(!/[\uD800-\uDBFF]$/.test(n), 'kein halbes Surrogatpaar');
+    const o = l.options[2];
+    store.renameOption(l.id, o.id, 'd'.repeat(119) + '🎉🎉');
+    assert.equal(store.getList(l.id).options[2].name, 'd'.repeat(119) + '🎉');
+  });
+
   test('addOptions gibt Anzahl neuer zurück', () => {
     const { store } = mk();
     assert.equal(store.addOptions(EXAMPLE_LIST_ID, ['rom', 'Paris', 'PARIS', 'Wien']), 2);
@@ -394,6 +494,30 @@ describe('Gerät, Partner, Abgleich', () => {
     assert.equal(ps.find((p) => p.deviceId === 'd_anna000001').name, 'Neu');
     store.removePartner(EXAMPLE_LIST_ID, 'd_anna000001');
     assert.deepEqual(store.getList(EXAMPLE_LIST_ID).partners.map((p) => p.deviceId), ['d_bert000001']);
+  });
+
+  test('savePartner: Stand aus der Zukunft wird auf jetzt begrenzt und blockiert keine echten Updates (N2)', () => {
+    const storage = new FakeStorage();
+    let t = 1_000_000_000;
+    const store = createStore({ storage, now: () => t });
+    store.init();
+    const year2100 = 4102444800 * 1000;
+    assert.equal(store.savePartner(EXAMPLE_LIST_ID, partner('d_anna000001', year2100, { name: 'Zukunft' })), true);
+    assert.equal(store.getList(EXAMPLE_LIST_ID).partners[0].sentAt, t);
+    t += 1000;
+    assert.equal(store.savePartner(EXAMPLE_LIST_ID, partner('d_anna000001', t, { name: 'Echt' })), true);
+    assert.equal(store.getList(EXAMPLE_LIST_ID).partners[0].name, 'Echt');
+    // bis 1 Tag Vorlauf (Uhrabweichung) bleibt unverändert
+    assert.equal(store.savePartner(EXAMPLE_LIST_ID, partner('d_bert000001', t + 3600_000)), true);
+    assert.equal(store.getList(EXAMPLE_LIST_ID).partners[1].sentAt, t + 3600_000);
+  });
+
+  test('alter Stand aus der Zukunft im Speicher blockiert echte Updates nicht (N2)', () => {
+    const st = defaultState(1);
+    st.lists[EXAMPLE_LIST_ID].partners.push({ deviceId: 'd_anna000001', name: 'Alt', sentAt: 4102444800000, receivedAt: 1, options: [] });
+    const { store } = mk({ [STORAGE_KEY]: JSON.stringify(st) });
+    assert.equal(store.savePartner(EXAMPLE_LIST_ID, partner('d_anna000001', 5_000_000, { name: 'Neu' })), true);
+    assert.equal(store.getList(EXAMPLE_LIST_ID).partners[0].name, 'Neu');
   });
 
   const share = (l, names, a) => ({ v: 1, l, n: 'X', p: 'Anna', d: 'd_anna000001', t: 1, o: names.map((n) => [n, 1000, 0]), a });

@@ -2,7 +2,7 @@
 // Wichtig: Der Import dieses Moduls darf in Node nicht werfen (kein direkter Zugriff auf window/localStorage).
 import { applyResult, START_RATING } from '../logic/elo.js';
 import { normalizeName } from '../logic/text.js';
-import { defaultState, migrate, newId, SchemaError } from './schema.js';
+import { defaultState, migrateWithReport, newId, SchemaError } from './schema.js';
 
 /** @typedef {import('../types.js').AppState} AppState */
 /** @typedef {import('../types.js').List} List */
@@ -13,8 +13,13 @@ import { defaultState, migrate, newId, SchemaError } from './schema.js';
 /** @typedef {import('../types.js').ShareData} ShareData */
 
 export const STORAGE_KEY = 'elo-duell:state';
-/** Ablage für einen unlesbaren Rohinhalt (genau ein Eintrag, überschreibt einen älteren). */
+/** Ablage für einen beschädigten Rohinhalt (ältester Eintrag; wird nie überschrieben). */
 export const BROKEN_KEY = 'elo-duell:defekt';
+/** Weitere beschädigte Rohinhalte: `elo-duell:defekt:<ms>`; insgesamt höchstens MAX_BROKEN. */
+export const BROKEN_PREFIX = 'elo-duell:defekt:';
+export const MAX_BROKEN = 3;
+/** Partner-Stände dürfen höchstens so weit in der Zukunft liegen (N2). */
+const FUTURE_SLACK = 24 * 60 * 60 * 1000;
 
 const MAX_NAME = 120;
 const MAX_ALIASES = 20;
@@ -24,12 +29,25 @@ const MSG_MEMORY = 'Speichern ist in diesem Browser nicht möglich – Änderung
 const MSG_QUOTA = 'Speicher voll – Änderungen gehen beim Schließen verloren. Bitte Sicherung exportieren (Einstellungen).';
 const MSG_WRITE = 'Speichern fehlgeschlagen – Änderungen gehen beim Schließen verloren. Bitte Sicherung exportieren.';
 const MSG_BROKEN = 'Gespeicherte Daten waren beschädigt und wurden beiseitegelegt. Die App startet mit der Beispielliste.';
+const MSG_BROKEN_KEPT = ' Die Originaldaten kannst du in den Einstellungen herunterladen.';
+/** @param {number} n */
+const msgRepaired = (n) => `Gespeicherte Daten waren teilweise beschädigt: ${n.toLocaleString('de-DE')} ${n === 1 ? 'beschädigter Eintrag' : 'beschädigte Einträge'} entfernt oder repariert.`;
 
 /** @template T @param {T} v @returns {T} */
 const clone = (v) => (typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
 
+/** Kürzt auf MAX_NAME Codepoints (keine halben Surrogatpaare, wie parseOptionLines). @param {string} s @returns {string} */
+function clipName(s) {
+  if (s.length <= MAX_NAME) return s;
+  const cps = Array.from(s);
+  return cps.length <= MAX_NAME ? s : cps.slice(0, MAX_NAME).join('').trimEnd();
+}
+
 /** @param {any} name @returns {string} */
-const cleanName = (name) => String(name ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().slice(0, MAX_NAME);
+const cleanName = (name) => clipName(String(name ?? '').normalize('NFC').replace(/\s+/g, ' ').trim());
+
+/** @param {any} v @returns {boolean} */
+const own = (v, /** @type {string} */ k) => Object.prototype.hasOwnProperty.call(v, k);
 
 /** @param {any} err @returns {boolean} */
 function isQuotaError(err) {
@@ -112,7 +130,7 @@ export function createStore(deps = {}) {
 
   /** @param {string} id @returns {List} */
   function mustList(id) {
-    const l = state.lists[id];
+    const l = typeof id === 'string' && own(state.lists, id) ? state.lists[id] : undefined;
     if (!l) throw new Error(`Liste ${id} nicht gefunden`);
     return l;
   }
@@ -144,11 +162,62 @@ export function createStore(deps = {}) {
     return added;
   }
 
-  /** @param {any} raw @returns {AppState} */
+  /** @param {any} raw @returns {{state:AppState, repaired:number}} */
   function parseStored(raw) {
     let parsed;
     try { parsed = JSON.parse(raw); } catch { throw new SchemaError('kein JSON'); }
-    return migrate(parsed);
+    return migrateWithReport(parsed);
+  }
+
+  /** Vorhandene Ablagen für beschädigte Rohinhalte, älteste zuerst. @returns {{key:string, at:number}[]} */
+  function brokenEntries() {
+    if (!storage) return [];
+    /** @type {{key:string, at:number}[]} */ const out = [];
+    try { if (storage.getItem(BROKEN_KEY) !== null) out.push({ key: BROKEN_KEY, at: 0 }); } catch { /* egal */ }
+    try {
+      const n = Number(storage.length) || 0;
+      for (let i = 0; i < n; i++) {
+        const k = storage.key(i);
+        if (typeof k === 'string' && k.startsWith(BROKEN_PREFIX)) out.push({ key: k, at: Number(k.slice(BROKEN_PREFIX.length)) || 0 });
+      }
+    } catch { /* Storage ohne key()/length */ }
+    return out.sort((a, b) => (a.key === BROKEN_KEY ? -1 : b.key === BROKEN_KEY ? 1 : a.at - b.at));
+  }
+
+  /**
+   * Legt einen beschädigten Rohinhalt beiseite, ohne einen vorhandenen zu überschreiben (H1).
+   * Höchstens MAX_BROKEN Ablagen; ist alles voll, wird die jüngste ersetzt (die älteste bleibt immer).
+   * @param {string} raw @returns {boolean} true, wenn der Inhalt jetzt gesichert ist
+   */
+  function keepBroken(raw) {
+    if (!storage) return false;
+    try {
+      const entries = brokenEntries();
+      for (const e of entries) if (storage.getItem(e.key) === raw) return true;
+      if (!entries.some((e) => e.key === BROKEN_KEY)) {
+        storage.setItem(BROKEN_KEY, raw);
+        return true;
+      }
+      let t = now();
+      while (entries.some((e) => e.key === BROKEN_PREFIX + t)) t++;
+      if (entries.length >= MAX_BROKEN) {
+        const newest = entries[entries.length - 1];
+        if (newest.key !== BROKEN_KEY) storage.removeItem(newest.key);
+      }
+      storage.setItem(BROKEN_PREFIX + t, raw);
+      return true;
+    } catch {
+      return false;   // z. B. Quota
+    }
+  }
+
+  /** Geräte-ID (und Name) aus einem unbrauchbaren Rohinhalt retten. @param {string} raw @param {AppState} target */
+  function rescueDevice(raw, target) {
+    try {
+      const d = JSON.parse(raw)?.device;
+      if (d && typeof d.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(d.id)) target.device.id = d.id;
+      if (d && typeof d.name === 'string') target.device.name = cleanName(d.name);
+    } catch { /* nicht zu retten */ }
   }
 
   /** @param {StorageEvent|any} e */
@@ -162,7 +231,7 @@ export function createStore(deps = {}) {
         return;
       }
       try {
-        state = parseStored(e.newValue);   // letzter Schreiber gewinnt
+        state = parseStored(e.newValue).state;   // letzter Schreiber gewinnt
         notify();
       } catch { /* kaputter Fremdstand: eigenen RAM-Stand behalten */ }
     } else if (e.key === null) {
@@ -210,13 +279,21 @@ export function createStore(deps = {}) {
         state = defaultState(now());   // leerer State → Beispielliste
       } else {
         try {
-          state = parseStored(raw);
-          skipInitialWrite = true;     // unverändert, nichts zu schreiben
+          const res = parseStored(raw);
+          state = res.state;
+          if (res.repaired > 0) {
+            // Einzelne Einträge repariert/entfernt: Original beiseitelegen, reparierten Stand schreiben.
+            const saved = keepBroken(raw);
+            warnings.push(msgRepaired(res.repaired) + (saved ? MSG_BROKEN_KEPT : ''));
+            if (!saved) skipInitialWrite = true;
+          } else {
+            skipInitialWrite = true;     // unverändert, nichts zu schreiben
+          }
         } catch {
-          let saved = false;
-          try { storage.setItem(BROKEN_KEY, raw); saved = true; } catch { /* z. B. Quota */ }
+          const saved = keepBroken(raw);
           state = defaultState(now());
-          warnings.push(MSG_BROKEN);
+          rescueDevice(raw, state);
+          warnings.push(MSG_BROKEN + (saved ? MSG_BROKEN_KEPT : ''));
           // Konnte der Rohinhalt nicht gesichert werden, nicht sofort überschreiben.
           if (!saved) skipInitialWrite = true;
         }
@@ -237,6 +314,7 @@ export function createStore(deps = {}) {
 
     /** @param {string} id @returns {List|undefined} */
     getList(id) {
+      if (typeof id !== 'string' || !own(state.lists, id)) return undefined;
       const l = state.lists[id];
       return l ? clone(l) : undefined;
     },
@@ -247,7 +325,7 @@ export function createStore(deps = {}) {
      * @returns {List[]}
      */
     listLists() {
-      return state.order.map((id) => state.lists[id]).filter(Boolean)
+      return state.order.filter((id) => own(state.lists, id)).map((id) => state.lists[id]).filter(Boolean)
         .sort((a, b) => ((b.updatedAt || 0) - (a.updatedAt || 0))
           || ((b.createdAt || 0) - (a.createdAt || 0))
           || String(a.name).localeCompare(String(b.name), 'de'))
@@ -258,9 +336,11 @@ export function createStore(deps = {}) {
     createList(name, names, id) {
       const t = now();
       /** @type {string[]} */ const aliases = [];
-      let listId = typeof id === 'string' && id ? id.slice(0, 64) : '';
-      if (listId && state.lists[listId]) { aliases.push(listId); listId = ''; }
-      while (!listId || state.lists[listId]) listId = newId('l_', 10);
+      const foreign = typeof id === 'string' && id ? id.slice(0, 64) : '';
+      // Fremde ID übernehmen, wenn sie frei und unverdächtig ist; sonst nur als Alias merken.
+      let listId = /^[A-Za-z0-9_-]{1,64}$/.test(foreign) && foreign !== '__proto__' ? foreign : '';
+      if (foreign && (!listId || own(state.lists, listId))) { aliases.push(foreign); listId = ''; }
+      while (!listId || own(state.lists, listId)) listId = newId('l_', 10);
       /** @type {List} */
       const l = {
         id: listId, aliases, name: cleanName(name) || 'Neue Liste', createdAt: t, updatedAt: t,
@@ -286,7 +366,7 @@ export function createStore(deps = {}) {
 
     /** @param {string} id */
     deleteList(id) {
-      if (!state.lists[id]) return;
+      if (typeof id !== 'string' || !own(state.lists, id)) return;
       delete state.lists[id];
       state.order = state.order.filter((x) => x !== id);
       commit();
@@ -402,20 +482,29 @@ export function createStore(deps = {}) {
     /** @returns {Device} */
     getDevice() { return { ...state.device }; },
 
-    /** @param {string} listId @param {PartnerRanking} partner @returns {boolean} false, wenn neuerer sentAt gespeichert */
+    /**
+     * Nur endliche Zahlen (K1). sentAt mehr als einen Tag in der Zukunft wird auf jetzt begrenzt (N2).
+     * @param {string} listId @param {PartnerRanking} partner @returns {boolean} false, wenn neuerer sentAt gespeichert
+     */
     savePartner(listId, partner) {
       const l = mustList(listId);
       if (!partner || typeof partner.deviceId !== 'string' || !partner.deviceId) throw new Error('Ungültiger Partner');
+      const t = now();
+      const fin = (/** @type {any} */ v) => typeof v === 'number' && Number.isFinite(v);
+      if (!fin(partner.sentAt) || partner.sentAt < 0) throw new Error('Ungültiger Partner: Zeitstempel');
+      const opts = partner.options || [];
+      if (!Array.isArray(opts) || !opts.every((o) => o && fin(o.rating) && fin(o.duels))) throw new Error('Ungültiger Partner: Zahlen');
       /** @type {PartnerRanking} */
       const p = {
         deviceId: partner.deviceId,
         name: String(partner.name ?? ''),
-        receivedAt: Number(partner.receivedAt) || now(),
-        sentAt: Number(partner.sentAt) || 0,
-        options: (partner.options || []).map((o) => ({ name: String(o.name), rating: Number(o.rating), duels: Number(o.duels) || 0 })),
+        receivedAt: fin(partner.receivedAt) ? partner.receivedAt : t,
+        sentAt: partner.sentAt > t + FUTURE_SLACK ? t : partner.sentAt,
+        options: opts.map((o) => ({ name: String(o.name), rating: o.rating, duels: Math.max(0, Math.round(o.duels)) })),
       };
       const i = l.partners.findIndex((x) => x.deviceId === p.deviceId);
-      if (i >= 0 && l.partners[i].sentAt > p.sentAt) return false;
+      // Ein früher gespeicherter Stand aus der Zukunft blockiert echte Updates nicht.
+      if (i >= 0 && Math.min(l.partners[i].sentAt, t) > p.sentAt) return false;
       if (i >= 0) l.partners[i] = p; else l.partners.push(p);
       touch(l);
       commit();
@@ -434,7 +523,7 @@ export function createStore(deps = {}) {
     findMatch(shareData) {
       const theirs = new Set((shareData?.o || []).map((e) => normalizeName(String(e[0]))));
       const foreignAliases = Array.isArray(shareData?.a) ? shareData.a : [];
-      const lists = state.order.map((id) => state.lists[id]).filter(Boolean);
+      const lists = state.order.filter((id) => own(state.lists, id)).map((id) => state.lists[id]).filter(Boolean);
       for (const l of lists) {
         if (shareData.l === l.id || l.aliases.includes(shareData.l) || foreignAliases.includes(l.id)) {
           return { list: clone(l), kind: 'id', overlap: jaccard(nameSet(l), theirs) };
@@ -462,7 +551,7 @@ export function createStore(deps = {}) {
 
     /** @param {AppState} newState Backup-Import; behält aktuelle device.id */
     replaceAll(newState) {
-      const s = migrate(newState);   // wirft SchemaError bei Unbrauchbarem
+      const s = migrateWithReport(newState).state;   // wirft SchemaError bei Unbrauchbarem
       const cur = state.device;
       s.device = { id: cur.id, name: cur.name || s.device.name || '' };
       state = s;
@@ -477,6 +566,21 @@ export function createStore(deps = {}) {
 
     /** @returns {{mode:'local'|'memory', lastError:string|null}} */
     status() { return { mode, lastError }; },
+
+    /** Beiseitegelegte beschädigte Rohinhalte (H1), älteste zuerst. @returns {{key:string, at:number, size:number}[]} */
+    listBroken() {
+      return brokenEntries().map((e) => {
+        let size = 0;
+        try { size = (storage?.getItem(e.key) || '').length; } catch { /* egal */ }
+        return { ...e, size };
+      });
+    },
+
+    /** @param {string} key @returns {string|null} Rohinhalt einer Ablage */
+    getBroken(key) {
+      if (typeof key !== 'string' || (key !== BROKEN_KEY && !key.startsWith(BROKEN_PREFIX)) || !storage) return null;
+      try { return storage.getItem(key); } catch { return null; }
+    },
 
     /** @param {(msg:string)=>void} fn @returns {()=>void} */
     onWarning(fn) {
