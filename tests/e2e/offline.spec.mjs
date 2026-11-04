@@ -6,7 +6,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchPersistent, waitForSw, createList, makeJsonPayload } from './helpers.mjs';
 
-test.describe.configure({ mode: 'serial' });
 
 test('offline: Reload zeigt App-Shell, Daten bleiben, Duell funktioniert', async () => {
   const app = await launchPersistent();
