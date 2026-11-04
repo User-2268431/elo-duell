@@ -33,7 +33,10 @@ const routes = [
 const { warning } = store.init();
 if (warning) ui.setBanner('storage', warning);
 store.onWarning((msg) => ui.setBanner('storage', msg));
-// TODO (C): In-App-WebView erkennen → ui.setBanner('webview', 'Bitte in Chrome öffnen') (§12)
+// In-App-WebViews (Telegram, Instagram, Facebook, Android-WebView) haben eigenen Speicher (§12).
+if (/; wv\)|Instagram|FBAN|FBAV|Telegram/i.test(navigator.userAgent || '')) {
+  ui.setBanner('webview', 'Bitte in Chrome öffnen – in diesem eingebauten Browser bleiben deine Listen nicht erhalten.');
+}
 
 initPwa({
   onUpdateReady(apply) {
