@@ -1,0 +1,31 @@
+Prüfung ARCHITEKTUR.md v1 (Technik), abgeglichen mit pwa-offline.md, qr.md und elo-abbruch.md (liegt inzwischen vor). Lokal geprüft: Node v22.23.4, Playwright 1.63.0 nur global unter /opt/node22/lib/node_modules/playwright, kein @playwright/test.
+
+**1) MUSS-Änderungen**
+- §10: `node --test tests/unit/` schlägt unter Node 22 fehl („Cannot find module …/tests/unit“, lokal geprüft). Ersetzen durch `node --test "tests/unit/*.test.mjs"` (Glob in Anführungszeichen).
+- §4B/§10: `export const store = createStore()` mit `window.localStorage` wirft beim Import in Node einen ReferenceError (`typeof localStorage` ist dort `undefined`). Lösung: `globalThis.localStorage` in try/catch, `null` als Fallback, oder `store` erst lazy erzeugen.
+- §11/§8: Start-Commit 0 mit Skeletten aller Dateien aus §2 (richtige Exporte, `export default {title, render}`). Den Satz „Stubs werden nicht eingecheckt“ streichen. Sonst gilt: Die statischen View-Imports in app.js brechen das ganze Modul ab. `cache.addAll` scheitert schon an einer 404, also kein SW und kein Offline-Test. Der Precache-Test ist dauerhaft rot.
+- §8: Der Precache-Test braucht eine Whitelist statt einer Ausschlussliste: `index.html`, `./`, `manifest.webmanifest`, `css/**`, `js/**`, `icons/**`, `vendor/*.{mjs,js}`. Sonst greift er auch DECISIONS.md, STATUS.md, package.json, playwright.config.mjs, vendor-candidates/, LICENSE-Dateien und sw.js. jsQR muss explizit drin sein (lazy geladen, aber offline nötig).
+- §9: `activate` darf nur Caches mit dem Präfix `elo-duell-` löschen, weil alle Pages-Repos denselben Origin teilen. Außerdem `new Request(u,{cache:'reload'})` beim Precache (max-age=600 auf Pages) und `clients.claim()` übernehmen, beides wie in pwa-offline.md §2.
+- §4E: Den `controllerchange`-Listener erst in `apply()` registrieren (oder per Flag absichern). Mit `clients.claim()` feuert das Event sonst schon beim ersten Besuch und lädt die Seite ungefragt neu. Außerdem die Nachricht vereinheitlichen: §4E sendet `{type:'SKIP_WAITING'}`, die Recherche prüft auf den String `'SKIP_WAITING'`.
+- §4B (storage-Event): Nur auf `e.key === 'elo-duell:v1'` reagieren. Andere Apps auf user-2268431.github.io lösen sonst Neuladen aus. Kommt `key === null` (fremdes `clear()`), RAM-Stand behalten und neu schreiben, nicht leeren.
+- §5: QR-Grenzen an qr.md §3 anpassen. Heute: M unter 1200, L darüber, Abbruch erst ab 2000 Zeichen. Bei M entspricht 1200 Zeichen etwa v27–28, 2000 Zeichen bei L über v33. Zuverlässig lesbar ist laut Messung nur bis v20–25. Neu: immer ECC L; QR nur bis etwa 1000 Zeichen URL (v23 L), darüber QR ausblenden und nur den Link anbieten; ab etwa 2000 Zeichen Warnung (Signal kürzt).
+- §3/§4D: Typedef `ShareData` fehlt in types.js, obwohl D (codec) und B (`findMatch(shareData)`) ihn brauchen. Festlegen: Kurzschlüssel wie in §5 (`v,l,n,p,d,t,o`) und `toPartnerRanking`: `sentAt = t*1000`.
+- §4A (stability.js): Die Regel aus elo-abbruch.md §3 übernehmen. Das sind nicht nur zwei Konstanten: vorläufig ab M1=ceil(1,5N) mit gmin≥2, stabil ab M2=ceil(dStab·N/2) mit dStab 4/5/6 je nach N und gmin≥3, dazu `fehlt()`, `rest1`/`rest2`, `fortschritt=M/M2` und die Hinweistexte. Den Hinweis am Ende der Architektur entsprechend korrigieren. M eindeutig definieren, z. B. Σduels/2, weil „Option löschen“ History-Einträge entfernt und history.length dann nicht mehr passt.
+- §10: Das E2E-Setup ist so nicht lauffähig. @playwright/test fehlt, und ESM findet globale Module nicht. Festlegen: devDependency `playwright@1.63.0` (passt zu chromium-1243) oder Symlink `node_modules/playwright` auf die globale Installation, Import aus `'playwright/test'`, Start per `npx playwright test`.
+- §10 (install): Installierbarkeit nur mit `launchPersistentContext` und CDP `Page.getInstallabilityErrors` sowie `getAppManifest` prüfen. `newContext` liefert den Fehler `in-incognito`.
+- §10/§9 (Lighthouse 11, fehlt komplett, obwohl STATUS.md es fordert): Kommando aus pwa-offline.md §3a übernehmen, Ziel `--only-categories=pwa` mit Score 1. Dafür im Manifest ergänzen: `short_name`, `theme_color`, `background_color` (für die Audits splash-screen und themed-omnibox), außerdem Viewport-Meta in index.html.
+
+**2) SOLL-Änderungen**
+- §9/§10: tools/serve.mjs mit korrekten MIME-Typen (`.mjs`/`.js` als text/javascript, `.webmanifest` als application/manifest+json), 301 von `/elo-duell` auf `/elo-duell/`, `Cache-Control: no-cache`.
+- §10 Offline-Szenario wie in der Recherche: offline einen neuen Tab mit einem `#i=…`-Link öffnen (nicht nur Reload). Dabei Hash, Import-View und Smoke-Test prüfen.
+- §5 Codec: Länge des Payloads vor dem Dekodieren begrenzen (z. B. 64 KB). Die 256-KB-Grenze beim Streamen zählen und mit `reader.cancel()` abbrechen. Fehlt DecompressionStream, gibt ein `z`-Payload `ShareError('version')` mit Text. Base64 in Blöcken bauen, nicht per Spread. Eigene Geräte-ID (`d`) beim Import abweisen.
+- §3: Schlüssel versionsneutral halten (`elo-duell:state`, Schema steht im Feld). Nur einen `elo-duell:defekt`-Eintrag behalten (Quota). `persist()` erst nach dem ersten Schreiben aufrufen (Recherche §4).
+- §5/§6: Die Recherche nutzt `#r=` bzw. `#d=`. Ausdrücklich `#i=` als verbindlich erklären. Leerer Hash wird zu `#/`.
+- §4D: `facingMode:{ideal:'environment'}`, `<video playsinline muted autoplay>`. jsQR als min-Version vendoren (130 statt 257 KB).
+- §8: Format des PRECACHE in sw.js festlegen (`const PRECACHE = [` mit einem String pro Zeile), damit der Test parsen kann. Optional einen Inhalts-Hash prüfen, der eine VERSION-Erhöhung erzwingt.
+- §11: Git-Ablauf festlegen (eigener Worktree oder Branch je Agent, Commits nur durch den Koordinator), sonst kollidiert `index.lock`. A liefert elo.js und text.js als Erstes, weil B sie braucht. E liefert helpers.mjs früh, mit festen Signaturen.
+- §10: `cmp-item-<index>` ist abschnittsübergreifend nicht eindeutig. Nach Abschnitt präfixen (z. B. `cmp-favorites-item-0`).
+- §4A pairing: Top-Fokus aus elo-abbruch.md §4 prüfen. Laut Simulation bringt er deutlich mehr „Sieger auf Platz 1“.
+- §9/§12: Risiko ergänzen: In-App-WebViews (z. B. Telegram, Instagram) haben eigenen Speicher. Ein dort geöffneter Import landet nicht in Chrome. Hinweis „In Chrome öffnen“ anzeigen.
+
+**3) Gesamturteil:** tragfähig mit Änderungen.
