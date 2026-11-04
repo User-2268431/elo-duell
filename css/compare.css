@@ -1,1 +1,35 @@
 /* Eigentümer: D – Vergleich (.cmp-*). Siehe docs/ARCHITEKTUR.md §8. */
+
+.cmp-head { justify-content: space-between; }
+.cmp-date { flex: 1 1 12em; font-size: 1rem; }
+.cmp-remove { color: var(--danger); }
+.cmp-hint { border-color: var(--accent); background: var(--accent-soft); }
+.cmp-heading { font-size: 1.1875rem; }
+.cmp-intro { font-size: 1rem; }
+.cmp-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cmp-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--card-2);
+}
+.cmp-name { font-weight: 650; overflow-wrap: anywhere; }
+.cmp-places { font-size: 1rem; }
+.cmp-item.is-veto { border-left: 4px solid var(--danger); }
+.cmp-veto {
+  align-self: flex-start;
+  margin-top: 4px;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+.cmp-favorites .cmp-item { border-left: 4px solid var(--ok); }
+.cmp-empty { font-size: 1rem; }
+.cmp-only-summary {
+  min-height: var(--tap);
+  display: flex; align-items: center;
+  font-weight: 650;
+  cursor: pointer;
+}
+.cmp-only-body { padding-top: 8px; }
+.cmp-only-list { margin: 6px 0 0; padding-left: 1.25em; }
+.cmp-share-back { margin-top: 4px; }

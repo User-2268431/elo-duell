@@ -2,7 +2,8 @@
 
 /* ---------- Startseite ---------- */
 .lists-home { min-height: calc(100dvh - var(--bar-h) - var(--safe-t) - var(--gap) - 1px); }
-.lists-home > .bottom-bar { margin-top: auto; }
+.lists-home { margin-bottom: calc(-1 * (var(--gap) + var(--safe-b))); }
+.lists-home > .bottom-bar { margin-top: auto; margin-bottom: 0; }
 .lists-grid { display: flex; flex-direction: column; gap: 12px; }
 .lists-card {
   display: flex; align-items: center; gap: 12px;

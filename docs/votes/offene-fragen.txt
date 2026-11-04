@@ -1,1 +1,3 @@
 F-A1 Text nach Hinzufügen einer Option: A rest2 im Text / B kein eigener Text / C so lassen (rest1)
+F-B1 Position neuer Listen in der Übersicht: a oben (umgesetzt) / b unten / c nach letzter Änderung
+F-B2 Nach Import der Sicherung: a Übersicht + Toast (umgesetzt) / b in Einstellungen bleiben

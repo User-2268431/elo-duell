@@ -1,7 +1,8 @@
 /* Eigentümer: C – Rangliste (.rank-*). Siehe docs/ARCHITEKTUR.md §7, §8. */
 
 .rank-view { min-height: calc(100dvh - var(--bar-h) - var(--safe-t) - var(--gap) - 1px); }
-.rank-view > .bottom-bar { margin-top: auto; }
+.rank-view { margin-bottom: calc(-1 * (var(--gap) + var(--safe-b))); }
+.rank-view > .bottom-bar { margin-top: auto; margin-bottom: 0; }
 .rank-hint { font-size: 1rem; }
 .rank-hint-stabil { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); }
 

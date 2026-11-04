@@ -1,1 +1,65 @@
 /* Eigentümer: D – Teilen, Scannen, Import (.share-* .scan-* .import-*). Siehe docs/ARCHITEKTUR.md §8. */
+
+/* ---------- Teilen ---------- */
+.share-head { display: flex; flex-direction: column; gap: 4px; }
+.share-title { font-size: 1.375rem; overflow-wrap: anywhere; }
+.share-qr {
+  display: flex; justify-content: center;
+  padding: 12px;
+  background: #ffffff;           /* QR immer schwarz auf weiß, auch im Dunkelmodus */
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+.share-qr canvas {
+  display: block;
+  width: min(100%, 64dvh);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #ffffff;
+}
+.share-how { font-weight: 600; text-align: center; }
+.share-too-big, .share-warn { border-color: var(--danger); }
+.share-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem;
+  color: var(--muted);
+  text-overflow: ellipsis;
+}
+.share-steps { font-size: 1rem; text-align: center; }
+
+/* ---------- Scannen ---------- */
+.scan-frame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  max-height: 60dvh;
+  margin: 0 auto;
+  width: 100%;
+  border-radius: var(--radius);
+  background: #000000;
+}
+.scan-video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.scan-target {
+  position: absolute; inset: 15%;
+  border: 3px solid rgb(255 255 255 / 0.85);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+.scan-status { text-align: center; min-height: 1.45em; }
+.scan-error { border-color: var(--danger); }
+.scan-paste { min-height: 96px; font-size: 1rem; word-break: break-all; }
+
+/* ---------- Import ---------- */
+.import-summary { font-size: 1.25rem; overflow-wrap: anywhere; }
+.import-error { border-color: var(--danger); font-weight: 600; }
+.import-match { color: var(--muted); }
+.import-add {
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--tap);
+  cursor: pointer;
+}
+.import-check { width: 24px; height: 24px; flex: none; accent-color: var(--accent); }
+.import-webview { border-color: var(--danger); }

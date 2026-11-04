@@ -51,7 +51,7 @@ export default {
           h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'rank-share',
             on: { click: () => navigate(`#/teilen/${enc}`) } }, icon('share'), 'Teilen'),
           h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'rank-duel',
-            on: { click: () => navigate(`#/duell/${enc}`) } }, icon('swords'), 'Weiter duellieren'),
+            on: { click: () => navigate(`#/duell/${enc}`) } }, icon('play'), 'Weiter duellieren'),
         ),
       );
     }

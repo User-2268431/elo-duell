@@ -84,6 +84,7 @@ export default {
       bar.style.setProperty('--p', String(p.ratio));
       bar.setAttribute('aria-valuenow', String(Math.round(p.ratio * 100)));
       hint.textContent = p.hint;
+      hint.title = p.hint;
       /** @type {HTMLButtonElement} */ (undoBtn).disabled = !list.history.length;
     }
 

@@ -59,13 +59,13 @@ export default {
           : h('p', { class: 'card lists-partner-none muted' }, 'Noch keine Rangliste empfangen – lass dir den QR-Code zeigen'),
       );
 
-      box.replaceChildren(
+      box.replaceChildren(...[
         progressCard,
         tooFew ? h('p', { class: 'card lists-warn' }, 'Füge mindestens zwei Optionen hinzu, um zu duellieren. ',
           h('a', { href: `#/liste/${enc}/bearbeiten` }, 'Optionen hinzufügen')) : null,
         h('div', { class: 'stack lists-actions' },
           h('button', { type: 'button', class: 'btn btn-primary btn-block lists-duel-btn', 'data-testid': 'list-duel',
-            on: { click: () => navigate(`#/duell/${enc}`) } }, icon('swords', 24), 'Duellieren'),
+            on: { click: () => navigate(`#/duell/${enc}`) } }, icon('play', 24), 'Duellieren'),
           h('div', { class: 'row' },
             h('button', { type: 'button', class: 'btn', 'data-testid': 'list-ranking',
               on: { click: () => navigate(`#/rangliste/${enc}`) } }, icon('list'), 'Rangliste'),
@@ -74,7 +74,7 @@ export default {
           ),
         ),
         partnerSection,
-      );
+      ].filter(Boolean));
     }
 
     draw();
