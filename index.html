@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Elo-Duell</title>
+  <meta name="description" content="Optionen im Duell vergleichen, Rangliste erstellen und mit einer zweiten Person abgleichen.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f7fb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121218" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/lists.css">
+  <link rel="stylesheet" href="./css/duel.css">
+  <link rel="stylesheet" href="./css/ranking.css">
+  <link rel="stylesheet" href="./css/settings.css">
+  <link rel="stylesheet" href="./css/share.css">
+  <link rel="stylesheet" href="./css/compare.css">
+  <link rel="stylesheet" href="./css/pwa.css">
+  <script type="module" src="./js/app.js"></script>
+</head>
+<body>
+  <header id="bar">
+    <button type="button" class="btn btn-ghost" data-testid="app-back" aria-label="Zurück" hidden>&larr;</button>
+    <h1 data-testid="app-title">Elo-Duell</h1>
+  </header>
+  <div id="banners"></div>
+  <main id="app"></main>
+  <div id="toast" data-testid="toast" aria-live="polite"></div>
+  <noscript>Elo-Duell braucht JavaScript.</noscript>
+</body>
+</html>
