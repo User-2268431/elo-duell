@@ -3,6 +3,9 @@ import { h, toast, confirmDialog, fmtDate } from '../ui.js';
 import { compareRankings, excludedThreshold } from '../logic/compare.js';
 import { progress } from '../logic/stability.js';
 
+/** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
+const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
+
 /** @typedef {import('../logic/compare.js').CmpItem} CmpItem */
 
 /** @param {any} ctx */
@@ -116,7 +119,7 @@ export default {
           navigate(`#/liste/${enc}`, { replace: true });
         } } }, 'Partner entfernen');
 
-      box.replaceChildren(
+      fill(box, 
         h('div', { class: 'cmp-head row' },
           h('p', { class: 'cmp-date muted', 'data-testid': 'cmp-partner-date' }, `Stand von ${who}: ${fmtDate(partner.sentAt)}`),
           removeBtn,

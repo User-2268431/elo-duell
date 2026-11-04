@@ -113,6 +113,7 @@ test('Zwei Handys: teilen, importieren, gegenläufig duellieren, vergleichen, zu
     expect(expB.excluded.length).toBeGreaterThan(0);
     expect(expB.talk.length).toBeGreaterThan(0);
     await expectCompare(B.page, expB, 'Anna');
+    expect(await B.page.locator('#app').innerText()).not.toMatch(/\bnull\b|undefined/);
     await expect(B.page.getByTestId('cmp-only-mine')).toHaveCount(0);
 
     // Rückweg B → A
@@ -152,7 +153,7 @@ test('Teilweise gemeinsame Optionen: „nur bei dir / nur bei …“ und zu weni
     // Fremde Rangliste direkt als Partner speichern (Datenweg wie nach einem Import)
     const share = {
       v: 1, l: listId, n: 'Kino', p: 'Anna', d: 'd_fremd00001', t: Math.floor(Date.now() / 1000),
-      o: [['Dune', 1040, 5], ['brazil', 1010, 5], ['Eraserhead', 1000, 5], ['Alien', 960, 5]],
+      o: [['Dune', 1040, 1], ['brazil', 1010, 1], ['Eraserhead', 1000, 1], ['Alien', 960, 1]],
     };
     await B.page.goto(`./#i=1.j.${Buffer.from(JSON.stringify(share)).toString('base64url')}`);
     await expect(B.page.getByTestId('import-summary')).toHaveText('Rangliste von Anna: Kino (4 Optionen)');

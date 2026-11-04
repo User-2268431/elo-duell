@@ -1,3 +1,5 @@
 F-A1 Text nach Hinzufügen einer Option: A rest2 im Text / B kein eigener Text / C so lassen (rest1)
 F-B1 Position neuer Listen in der Übersicht: a oben (umgesetzt) / b unten / c nach letzter Änderung
 F-B2 Nach Import der Sicherung: a Übersicht + Toast (umgesetzt) / b in Einstellungen bleiben
+F-D1 Checkbox 'X neue Optionen übernehmen' beim Import: a aus (umgesetzt) / b an / c eigener Button, übernimmt sofort
+F-D2 Namensfrage beim Teilen abgebrochen: a zurück zur Liste mit Hinweis (umgesetzt) / b ohne Namen teilen ('Unbekannt') / c Pflichtfeld ohne Abbrechen

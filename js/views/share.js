@@ -3,6 +3,9 @@ import { h, toast, promptDialog } from '../ui.js';
 import { encodeShare, buildShareUrl, toShareData, MAX_NAME } from '../share/codec.js';
 import { renderQr, QR_MAX_URL, LINK_WARN_URL } from '../share/qr.js';
 
+/** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
+const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
+
 /** Link per Zwischenablage kopieren; Fallback: Feld markieren. @param {string} url @param {HTMLInputElement} field */
 async function copyLink(url, field) {
   try {
@@ -77,7 +80,7 @@ export default {
         await copyLink(url, field);
       };
 
-      box.replaceChildren(
+      fill(box, 
         h('div', { class: 'share-head' },
           h('h2', { class: 'share-title' }, list.name),
           h('p', { class: 'muted' }, duels > 0
@@ -98,7 +101,7 @@ export default {
       );
     })().catch((err) => {
       console.error(err);
-      if (alive) box.replaceChildren(h('p', { class: 'card' }, 'Der Link konnte nicht erstellt werden.'));
+      if (alive) fill(box, h('p', { class: 'card' }, 'Der Link konnte nicht erstellt werden.'));
     });
 
     return () => { alive = false; };

@@ -2,7 +2,7 @@
 
 .cmp-head { justify-content: space-between; }
 .cmp-date { flex: 1 1 12em; font-size: 1rem; }
-.cmp-remove { color: var(--danger); }
+.cmp-remove { color: var(--danger); white-space: nowrap; }
 .cmp-hint { border-color: var(--accent); background: var(--accent-soft); }
 .cmp-heading { font-size: 1.1875rem; }
 .cmp-intro { font-size: 1rem; }

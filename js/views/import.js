@@ -4,6 +4,9 @@ import { decodeShare, toPartnerRanking, buildShareUrl, ShareError } from '../sha
 import { normalizeName } from '../logic/text.js';
 import { progress } from '../logic/stability.js';
 
+/** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
+const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
+
 /** In-App-Browser (eigener Speicher, nicht der von Chrome) grob am UA erkennen (§12). */
 function isInAppBrowser() {
   const ua = globalThis.navigator?.userAgent || '';
@@ -30,7 +33,7 @@ export default {
 
     /** @param {string} text @param {Node|null} [extra] */
     const showError = (text, extra = null) => {
-      box.replaceChildren(
+      fill(box, 
         h('p', { class: 'card import-error', 'data-testid': 'import-error', role: 'alert' }, text),
         extra,
         h('div', { class: 'stack' },
@@ -136,7 +139,7 @@ export default {
       }
 
       const sharedUrl = buildShareUrl(payload || '', location);
-      box.replaceChildren(
+      fill(box, 
         isInAppBrowser()
           ? h('section', { class: 'card stack import-webview', 'data-testid': 'import-webview' },
             h('p', {}, 'Du bist in einem In-App-Browser. Was du hier übernimmst, landet nicht in deiner Elo-Duell-App. Öffne den Link besser in Chrome (Menü ⋮ → „In Chrome öffnen“).'),

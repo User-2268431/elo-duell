@@ -1,5 +1,7 @@
 // Eigentümer: D – E2E Teilen/Import: QR = Link, Link öffnen, Einfügefeld, eigene Rangliste, Optionen ergänzen, zu groß für QR.
-import { test, expect, devices } from 'playwright/test';
+import { test, expect, devices, chromium } from 'playwright/test';
+import { existsSync, writeFileSync } from 'node:fs';
+import qrcode from '../../vendor/qrcode-generator.mjs';
 import { createList, playDuels, decodeQr } from './helpers.mjs';
 
 const BASE = 'http://localhost:4173/elo-duell/';
@@ -158,5 +160,51 @@ test('Beschädigter Link zeigt Fehler; zu große Liste nur als Link', async ({ b
     await expect(A.page.getByTestId('share-send')).toBeVisible();
   } finally {
     await A.context.close();
+  }
+});
+
+/** Schreibt ein Y4M-Video (640×480, 20 Bilder) mit dem QR-Code von text – für die Fake-Kamera von Chromium. */
+function writeQrVideo(/** @type {string} */ file, /** @type {string} */ text) {
+  const qr = qrcode(0, 'L'); qr.addData(text, 'Byte'); qr.make();
+  const n = qr.getModuleCount(), W = 640, H = 480, s = Math.floor(440 / (n + 8));
+  const ox = Math.floor((W - (n + 8) * s) / 2), oy = Math.floor((H - (n + 8) * s) / 2);
+  const Y = Buffer.alloc(W * H, 60);
+  for (let y = 0; y < (n + 8) * s; y++) for (let x = 0; x < (n + 8) * s; x++) {
+    const r = Math.floor(y / s) - 4, c = Math.floor(x / s) - 4;
+    Y[(oy + y) * W + ox + x] = r >= 0 && c >= 0 && r < n && c < n && qr.isDark(r, c) ? 16 : 235;
+  }
+  const UV = Buffer.alloc(W * H / 2, 128);
+  const parts = [Buffer.from(`YUV4MPEG2 W${W} H${H} F10:1 Ip A1:1 C420jpeg\n`)];
+  for (let i = 0; i < 20; i++) parts.push(Buffer.from('FRAME\n'), Y, UV);
+  writeFileSync(file, Buffer.concat(parts));
+}
+
+test('Kamera-Scan (Fake-Kamera, jsQR-Fallback) und Kamera stoppt beim Abbrechen', async ({}, testInfo) => {
+  const share = { v: 1, l: 'l_kamera0001', n: 'Kameratest', p: 'Kim', d: 'd_kamera0001', t: 1762290000, o: [['Eins', 1016, 1], ['Zwei', 984, 1]] };
+  const url = `${BASE}#i=1.j.${Buffer.from(JSON.stringify(share)).toString('base64url')}`;
+  const video = testInfo.outputPath('qr.y4m');
+  writeQrVideo(video, url);
+  const exe = '/opt/pw-browsers/chromium';
+  const browser = await chromium.launch({
+    ...(!process.env.PLAYWRIGHT_BROWSERS_PATH && existsSync(exe) ? { executablePath: exe } : {}),
+    args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-video-capture=${video}`],
+  });
+  try {
+    const { defaultBrowserType, ...pixel } = devices['Pixel 7'];
+    const context = await browser.newContext({ ...pixel, baseURL: BASE });
+    await context.grantPermissions(['camera'], { origin: 'http://localhost:4173' });
+    const page = await context.newPage();
+    await page.goto('./#/scan');
+    await expect(page).toHaveURL(/#\/import$/, { timeout: 15_000 });
+    await expect(page.getByTestId('import-summary')).toHaveText('Rangliste von Kim: Kameratest (2 Optionen)');
+
+    await page.goto('./#/scan');
+    await page.waitForFunction(() => /** @type {HTMLVideoElement} */ (document.querySelector('[data-testid=scan-video]'))?.srcObject);
+    await page.evaluate(() => { /** @type {any} */ (window).__s = /** @type {HTMLVideoElement} */ (document.querySelector('[data-testid=scan-video]')).srcObject; });
+    await page.getByTestId('scan-cancel').click();
+    await expect(page).toHaveURL(/#\/$/);
+    expect(await page.evaluate(() => /** @type {any} */ (window).__s.getVideoTracks().map((/** @type {any} */ t) => t.readyState))).toEqual(['ended']);
+  } finally {
+    await browser.close();
   }
 });

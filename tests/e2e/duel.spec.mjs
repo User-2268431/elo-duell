@@ -131,13 +131,14 @@ test('30 Duelle mit Rückgängig, Gleich gut, Überspringen; Rangliste stimmt', 
     sum += duels;
   }
   expect(sum).toBe(2 * 30);
-  // Lieblingsoption gewinnt
-  await expect(page.getByTestId('rank-row-1').getByTestId('rank-name')).toHaveText('Rom');
+  // Platz 1 = höchste nachgerechnete Wertung (bei Gleichstand reicht der Punktvergleich oben)
+  const leader = (await page.getByTestId('rank-row-1').getByTestId('rank-name').innerText()).trim();
+  expect(Math.round(expected[leader].rating)).toBe(Math.max(...Object.values(expected).map((v) => Math.round(v.rating))));
   await expect(page.getByTestId('rank-new')).toHaveCount(0);
 
   // Hinweis erscheint nicht noch einmal; Daten überleben Reload
   await page.reload();
-  await expect(page.getByTestId('rank-row-1').getByTestId('rank-name')).toHaveText('Rom');
+  await expect(page.getByTestId('rank-row-1').getByTestId('rank-name')).toHaveText(leader);
   await page.goto(`./#/duell/${id}`);
   await playDuels(page, 1, choose);
   await expect(page.getByTestId('duel-stable')).toHaveCount(0);
