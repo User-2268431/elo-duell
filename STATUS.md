@@ -18,4 +18,5 @@ Stand: 2026-11-04 22:35 MEZ
 - [ ] 6 Veröffentlichung
 
 ## Nächste Schritte
-- Recherche-Agenten laufen.
+- Recherche-Agenten (pwa-offline, qr, elo-abbruch) und Architektur-Vorschlag laufen parallel.
+- Danach: 2 Architektur-Prüfer, dann 5 Entwickler-Agenten parallel.
