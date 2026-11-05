@@ -24,6 +24,12 @@ Stand: 2026-11-04 23:55 MEZ (abgeschlossen)
 - 168 Unit, 32 E2E, Lighthouse 1; live seit ca. 19:17 MEZ.
 - Cloud-Umgebung „elo-duell“ erlaubt github.io und die Wikimedia-Hosts.
 
+## Version 1.0.3 und 1.0.4 (05.11.2026)
+- 1.0.3: Oberfläche Deutsch/Englisch (automatisch nach Handy-Sprache, umschaltbar), englische Beispielliste, docs/GUIDE.en.md. Live 21:59.
+- 1.0.4: „Ergebnis teilen“: Top 3 der gemeinsamen Favoriten als PNG (1080×1350) über das Teilen-Menü. Live 22:09.
+- Tests: 179 Unit, 38 E2E, Lighthouse 1.
+- Tokens Agenten: Bilder ca. 203k, Englisch ca. 221k, Ergebnisbild ca. 43k zusätzlich (gleicher Agent).
+
 ## Nächste Schritte
-- Offen (Rückfrage an Nutzer): englische Oberfläche ja/nein.
-- Bei künftigen Änderungen: VERSION in js/version.js, sw.js, package.json gleich erhöhen, `npm test` und `npm run test:lh` laufen lassen.
+- Ideen für weitere Runden: docs/IDEEN.md (Empfehlung: Bild ersetzen/entfernen + Suchbegriff, Vorlagen).
+- Bei künftigen Änderungen: VERSION in js/version.js, sw.js, package.json, package-lock.json und Api-User-Agent in js/images.js gleich erhöhen, `npm test` und `npm run test:lh` laufen lassen.

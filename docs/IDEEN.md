@@ -16,7 +16,7 @@ Stand: 05.11.2026. Sortiert nach Nutzen im Verhältnis zum Aufwand. Aufwand: S =
 ## Zu zweit noch besser
 | Idee | Nutzen | Aufwand |
 |---|---|---|
-| **Gemeinsamer Endstand**: Aus beiden Ranglisten eine Kompromiss-Rangliste (z. B. nach niedrigerer Wertung) zum Teilen als Bild | Klares Ergebnis für beide | M |
+| ~~**Gemeinsamer Endstand** als Bild~~ (umgesetzt in 1.0.4) | Klares Ergebnis für beide | erledigt |
 | **Mehr als zwei Personen** (Familie, Freundesgruppe): Vergleich mit 3 bis 6 Ranglisten, „Favorit der Gruppe“ | Neue Einsatzzwecke | M–L |
 | **Stichwahl-Modus**: Nur die gemeinsamen Top 3 noch einmal gegeneinander, beide am selben Handy abwechselnd | Entscheidung am Ende | M |
 | **Vetorecht**: Jede Person darf eine Option von vornherein streichen | Spart Duelle | S |
@@ -49,4 +49,4 @@ Stand: 05.11.2026. Sortiert nach Nutzen im Verhältnis zum Aufwand. Aufwand: S =
 ## Empfehlung für die nächste Runde
 1. Bild ersetzen/entfernen plus Suchbegriff pro Option (behebt die häufigste Schwäche der Bilder).
 2. Vorlagen zum Start.
-3. Gemeinsamer Endstand als teilbares Bild.
+3. ~~Gemeinsamer Endstand als teilbares Bild~~ (erledigt in 1.0.4).
