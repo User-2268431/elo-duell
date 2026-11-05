@@ -3,7 +3,7 @@
 import { test, expect, devices } from 'playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { createList, makeJsonPayload } from './helpers.mjs';
+import { createList, makeJsonPayload, isWikiUrl } from './helpers.mjs';
 
 const BASE = 'http://localhost:4173/elo-duell/';
 // Screenshots bewusst außerhalb des Repos (überschreibbar per Umgebungsvariable)
@@ -28,8 +28,11 @@ test('Dunkelmodus: alle Hauptansichten rendern dunkel und ohne Fehler', async ({
   const page = await context.newPage();
   /** @type {string[]} */ const errors = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e}`));
-  page.on('console', (msg) => { if (msg.type() === 'error') errors.push(`console: ${msg.text()}`); });
-  page.on('requestfailed', (r) => errors.push(`requestfailed: ${r.url()}`));
+  // Wikimedia ist in Tests gesperrt (playwright.config.mjs); deren Fehlschläge sind erwartet.
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' && !isWikiUrl(msg.location()?.url || '')) errors.push(`console: ${msg.text()}`);
+  });
+  page.on('requestfailed', (r) => { if (!isWikiUrl(r.url())) errors.push(`requestfailed: ${r.url()}`); });
 
   /** Prüft Hintergrund und Textinhalt, speichert Screenshot. @param {string} name */
   async function check(name) {

@@ -24,8 +24,13 @@
 .rank-row { min-height: var(--tap); }
 .rank-row + .rank-row { border-top: 1px solid var(--line); }
 .rank-place { font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
-.rank-name-cell { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 10px 0; }
-.rank-name { overflow-wrap: anywhere; font-weight: 600; }
+.rank-name-cell { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 10px 0; }
+.rank-name-text { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.rank-img {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 8px;
+  object-fit: cover; background: var(--card-2);
+}
+.rank-name { overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; font-weight: 600; }
 .rank-rating, .rank-duels { text-align: right; font-variant-numeric: tabular-nums; }
 .rank-rating { font-weight: 700; }
 .rank-duels { color: var(--muted); }

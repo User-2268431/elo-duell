@@ -88,6 +88,14 @@ export const BASE_URL = 'http://localhost:4173/elo-duell/';
  * @param {import('playwright/test').BrowserContextOptions} [extra]
  * @returns {Promise<{context:import('playwright/test').BrowserContext, page:import('playwright/test').Page, close:()=>Promise<void>}>}
  */
+/** Wie in playwright.config.mjs: Wikipedia/Wikimedia lösen in Tests nicht auf (kein echtes Netz). */
+export const BLOCK_WIKI_ARGS = [
+  '--host-resolver-rules=MAP de.wikipedia.org ~NOTFOUND, MAP en.wikipedia.org ~NOTFOUND, ' +
+  'MAP thumb.wikimedia.org ~NOTFOUND, MAP upload.wikimedia.org ~NOTFOUND',
+];
+/** Wikimedia-Anfrage (Bilder, js/images.js)? @param {string} url */
+export const isWikiUrl = (url) => /^https:\/\/([a-z]+\.wikipedia\.org|(thumb|upload)\.wikimedia\.org)\//.test(url);
+
 export async function launchPersistent(extra = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'elo-duell-pw-'));
   const { defaultBrowserType, ...pixel } = devices['Pixel 7'];
@@ -96,6 +104,7 @@ export async function launchPersistent(extra = {}) {
     ...pixel,
     baseURL: BASE_URL,
     ...(!process.env.PLAYWRIGHT_BROWSERS_PATH && fsExists(exe) ? { executablePath: exe } : {}),
+    args: BLOCK_WIKI_ARGS,
     ...extra,
   });
   const page = context.pages()[0] || (await context.newPage());

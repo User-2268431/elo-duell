@@ -1,8 +1,10 @@
 // Eigentümer: E – Service Worker (docs/ARCHITEKTUR.md §8, §9). Klassisches Skript, kein Modul.
 // VERSION muss gleich js/version.js sein; bei jedem Deploy erhöhen.
-const VERSION = '1.0.1';
+const VERSION = '1.0.2';
 const PREFIX = 'elo-duell-';
 const CACHE = PREFIX + VERSION;
+// Bildspeicher (js/images.js) überlebt Updates; Wikimedia-Anfragen laufen nicht über den SW (nur Same-Origin).
+const IMG_CACHE = 'elo-duell-img';
 
 // Genau ein String pro Zeile (wird von tests/unit/precache.test.mjs geparst).
 const PRECACHE = [
@@ -25,6 +27,7 @@ const PRECACHE = [
   './js/data/backup.js',
   './js/data/schema.js',
   './js/data/store.js',
+  './js/images.js',
   './js/logic/compare.js',
   './js/logic/elo.js',
   './js/logic/pairing.js',
@@ -61,7 +64,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     for (const k of await caches.keys()) {
-      if (k.startsWith(PREFIX) && k !== CACHE) await caches.delete(k);
+      if (k.startsWith(PREFIX) && k !== CACHE && k !== IMG_CACHE) await caches.delete(k);
     }
     await self.clients.claim();
   })());

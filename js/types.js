@@ -1,6 +1,6 @@
 // Eigentümer: B – nur JSDoc-Typedefs (docs/ARCHITEKTUR.md §3). Keine Laufzeit-Exporte außer dem Marker.
 
-/** @typedef {{schema:1, device:Device, lists:Record<string,List>, order:string[], settings:{}}} AppState */
+/** @typedef {{schema:1, device:Device, lists:Record<string,List>, order:string[], settings:{images?:boolean}}} AppState   // settings.images: Bilder aus Wikipedia (fehlt = an) */
 /** @typedef {{id:string, name:string}} Device   // id "d_"+10 Zeichen; name Standard "" (wird beim ersten Teilen erfragt) */
 /** @typedef {{
  *   id:string,            // "l_"+10 Zeichen [a-z0-9], crypto.getRandomValues; Beispielliste fest "l_beispiel01"

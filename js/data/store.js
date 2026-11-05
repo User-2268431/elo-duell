@@ -482,6 +482,16 @@ export function createStore(deps = {}) {
     /** @returns {Device} */
     getDevice() { return { ...state.device }; },
 
+    /** Einstellungen (flach, nur JSON-Werte). Fehlende Felder = Standard (z. B. images → an). @returns {Record<string, any>} */
+    getSettings() { return { ...state.settings }; },
+
+    /** @param {string} key @param {string|number|boolean|null} value */
+    setSetting(key, value) {
+      if (state.settings[key] === value) return;
+      state.settings = { ...state.settings, [key]: value };
+      commit();
+    },
+
     /**
      * Nur endliche Zahlen (K1). sentAt mehr als einen Tag in der Zukunft wird auf jetzt begrenzt (N2).
      * @param {string} listId @param {PartnerRanking} partner @returns {boolean} false, wenn neuerer sentAt gespeichert

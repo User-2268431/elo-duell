@@ -38,6 +38,9 @@ Der Balken zeigt, wie weit du bist, darunter steht, wie viele Duelle ungefähr n
 ### Rangliste
 Unter **„Rangliste“** siehst du Platz, Name, Punkte und die Zahl der Duelle. Alle Optionen starten bei 1.000 Punkten. Optionen ohne Duell stehen am Ende mit dem Hinweis „neu“.
 
+### Bilder
+Zu den Optionen lädt die App passende Fotos aus Wikipedia (de, sonst en) und zeigt sie in Duell und Rangliste. Dafür werden die Begriffe an Wikipedia gesendet; abschaltbar in den Einstellungen. Bildspeicher höchstens 300 Bilder/20 MB, offline nur bereits geladene Bilder. Details: [ANLEITUNG.md](ANLEITUNG.md#bilder).
+
 ## Zu zweit entscheiden
 
 Empfohlener Ablauf:

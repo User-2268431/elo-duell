@@ -2,6 +2,7 @@
 import { h, icon, toast } from '../ui.js';
 import { pickPair } from '../logic/pairing.js';
 import { progress } from '../logic/stability.js';
+import { images, loadImagesForList } from '../images.js';
 
 /** Nach jeder Entscheidung (auch Gleich gut, Überspringen, Rückgängig) Eingaben so lange ignorieren (M1: Doppeltipp). */
 export const INPUT_LOCK_MS = 250;
@@ -46,10 +47,18 @@ export default {
 
     const nameA = h('span', { class: 'duel-name' });
     const nameB = h('span', { class: 'duel-name' });
+    // Bild (Wikipedia) oben in der Karte; ohne Bild bleibt die Karte wie bisher (img hidden).
+    const imgA = /** @type {HTMLImageElement} */ (h('img', { class: 'duel-img', 'data-testid': 'duel-img-a', alt: '', hidden: true, decoding: 'async' }));
+    const imgB = /** @type {HTMLImageElement} */ (h('img', { class: 'duel-img', 'data-testid': 'duel-img-b', alt: '', hidden: true, decoding: 'async' }));
     const cardA = h('button', { type: 'button', class: 'duel-card duel-card-a', 'data-testid': 'duel-a',
-      on: { click: () => decide(1) } }, nameA);
+      on: { click: () => decide(1) } }, imgA, nameA);
     const cardB = h('button', { type: 'button', class: 'duel-card duel-card-b', 'data-testid': 'duel-b',
-      on: { click: () => decide(0) } }, nameB);
+      on: { click: () => decide(0) } }, imgB, nameB);
+    // Quellenangabe als Geschwister der Karte (kein Link im Button): ein Tipp darauf wertet nicht.
+    const creditA = /** @type {HTMLAnchorElement} */ (h('a', { class: 'duel-credit', 'data-testid': 'duel-credit-a', target: '_blank', rel: 'noopener', hidden: true }, 'Bild: Wikipedia'));
+    const creditB = /** @type {HTMLAnchorElement} */ (h('a', { class: 'duel-credit', 'data-testid': 'duel-credit-b', target: '_blank', rel: 'noopener', hidden: true }, 'Bild: Wikipedia'));
+    const slotA = h('div', { class: 'duel-slot' }, cardA, creditA);
+    const slotB = h('div', { class: 'duel-slot' }, cardB, creditB);
 
     const undoBtn = h('button', { type: 'button', class: 'btn duel-action', 'data-testid': 'duel-undo',
       on: { click: undo } }, icon('undo', 20), h('span', null, 'Rückgängig'));
@@ -66,7 +75,7 @@ export default {
 
     const view = h('div', { class: 'duel-view' },
       h('div', { class: 'duel-top' }, progressBox, stableBox, question),
-      h('div', { class: 'duel-cards' }, cardA, h('span', { class: 'duel-or', 'aria-hidden': 'true' }, 'oder'), cardB),
+      h('div', { class: 'duel-cards' }, slotA, h('span', { class: 'duel-or', 'aria-hidden': 'true' }, 'oder'), slotB),
       actions,
     );
     root.append(view);
@@ -116,6 +125,7 @@ export default {
       if (!pair) { emptyState(); return; }
       nameA.textContent = optName(list, pair[0]);
       nameB.textContent = optName(list, pair[1]);
+      showImages();
       for (const c of [cardA, cardB]) {
         c.classList.remove('duel-in');
         void c.offsetWidth; // Animation neu starten
@@ -123,6 +133,30 @@ export default {
       }
       updateStatus();
     }
+
+    /** @param {HTMLElement} card @param {HTMLImageElement} img @param {HTMLAnchorElement} credit @param {string} name */
+    function setImage(card, img, credit, name) {
+      const url = images.enabled() ? images.urlFor(name) : null;
+      const e = url ? images.entry(name) : null;
+      if (url && e) {
+        if (img.getAttribute('src') !== url) img.src = url;
+        img.alt = name;
+        credit.href = e.page;
+        credit.title = `Bild aus dem Wikipedia-Artikel „${e.title}“`;
+      } else {
+        img.removeAttribute('src');
+        img.alt = '';
+      }
+      img.hidden = credit.hidden = !(url && e);
+      card.classList.toggle('has-img', !!(url && e));
+    }
+    function showImages() {
+      if (!current) return;
+      setImage(cardA, imgA, creditA, nameA.textContent || '');
+      setImage(cardB, imgB, creditB, nameB.textContent || '');
+    }
+    const unsubImages = images.subscribe(showImages);
+    loadImagesForList(store, id);
 
     function next() {
       const list = getList();
@@ -197,6 +231,7 @@ export default {
 
     next();
     return () => {
+      unsubImages();
       document.removeEventListener('keydown', onKey);
       if (lockTimer) clearTimeout(lockTimer);
     };

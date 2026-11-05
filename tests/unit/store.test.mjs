@@ -584,3 +584,12 @@ describe('replaceAll', () => {
     assert.equal(store.listLists().length, 1);
   });
 });
+
+test('Einstellungen: alter Stand ohne Feld = Bilder an; setSetting speichert', () => {
+  const { store, storage } = mk();
+  assert.equal(store.getSettings().images, undefined);
+  store.setSetting('images', false);
+  assert.equal(store.getSettings().images, false);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).settings.images, false);
+  assert.deepEqual(validateState(store.getState()), []);
+});

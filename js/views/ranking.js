@@ -2,6 +2,7 @@
 import { h, icon, fmtRating } from '../ui.js';
 import { rankOptions } from '../logic/elo.js';
 import { progress } from '../logic/stability.js';
+import { images, loadImagesForList } from '../images.js';
 
 export default {
   title: 'Rangliste',
@@ -12,6 +13,12 @@ export default {
     const enc = encodeURIComponent(id);
     const box = h('div', { class: 'stack rank-view' });
     root.append(box);
+
+    /** @param {string} name */
+    function rankImg(name) {
+      const url = images.enabled() ? images.urlFor(name) : null;
+      return url ? h('img', { class: 'rank-img', 'data-testid': 'rank-img', src: url, alt: name, decoding: 'async' }) : null;
+    }
 
     function draw() {
       const list = store.getList(id);
@@ -28,8 +35,11 @@ export default {
         h('span', { class: 'rank-place', 'aria-label': o.isNew ? 'noch kein Platz' : `Platz ${o.rank}` },
           o.isNew ? '–' : `${o.rank}.`),
         h('span', { class: 'rank-name-cell' },
-          h('span', { class: 'rank-name', 'data-testid': 'rank-name' }, o.name),
-          o.isNew ? h('span', { class: 'badge rank-badge-new', 'data-testid': 'rank-new' }, 'neu') : null,
+          rankImg(o.name),
+          h('span', { class: 'rank-name-text' },
+            h('span', { class: 'rank-name', 'data-testid': 'rank-name' }, o.name),
+            o.isNew ? h('span', { class: 'badge rank-badge-new', 'data-testid': 'rank-new' }, 'neu') : null,
+          ),
         ),
         h('span', { class: 'rank-rating', 'data-testid': 'rank-rating' }, fmtRating(o.rating)),
         h('span', { class: 'rank-duels', 'data-testid': 'rank-duels' }, o.duels.toLocaleString('de-DE')),
@@ -57,6 +67,9 @@ export default {
     }
 
     draw();
-    return store.subscribe(() => { if (root.contains(box)) draw(); });
+    loadImagesForList(store, id);
+    const unsubImages = images.subscribe(() => { if (root.contains(box)) draw(); });
+    const unsub = store.subscribe(() => { if (root.contains(box)) draw(); });
+    return () => { unsub(); unsubImages(); };
   },
 };

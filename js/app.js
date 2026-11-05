@@ -3,6 +3,7 @@ import { store } from './data/store.js';
 import { initPwa } from './pwa.js';
 import { startRouter, navigate, openImport, getPendingImport, clearPendingImport } from './router.js';
 import * as ui from './ui.js';
+import { images } from './images.js';
 
 import home from './views/home.js';
 import listEdit from './views/list-edit.js';
@@ -33,6 +34,7 @@ const routes = [
 const { warning } = store.init();
 if (warning) ui.setBanner('storage', warning);
 store.onWarning((msg) => ui.setBanner('storage', msg));
+images.setEnabledSource(() => store.getSettings().images !== false);
 // In-App-WebViews (Telegram, Instagram, Facebook, Android-WebView) haben eigenen Speicher (§12).
 if (/; wv\)|Instagram|FBAN|FBAV|Telegram/i.test(navigator.userAgent || '')) {
   ui.setBanner('webview', 'Bitte in Chrome öffnen – in diesem eingebauten Browser bleiben deine Listen nicht erhalten.');

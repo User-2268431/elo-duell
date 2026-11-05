@@ -1,6 +1,7 @@
 // Eigentümer: B – View settings (docs/ARCHITEKTUR.md §6, §7).
 import { backupFileName, downloadBackup, downloadBroken, readBackupFileDetailed } from '../data/backup.js';
 import { VERSION } from '../version.js';
+import { images } from '../images.js';
 
 /** @param {number} bytes @returns {string} */
 function fmtBytes(bytes) {
@@ -118,6 +119,33 @@ export default {
     }
     renderStorage();
 
+    /* ---------- Bilder aus Wikipedia ---------- */
+    const imgToggle = /** @type {HTMLInputElement} */ (h('input', {
+      type: 'checkbox', class: 'set-check', id: 'set-images', 'data-testid': 'set-images',
+      checked: store.getSettings().images !== false,
+      on: { change: () => { store.setSetting('images', imgToggle.checked); renderImages(); } },
+    }));
+    const imgUsage = h('p', { class: 'muted', 'data-testid': 'set-images-usage' });
+    function renderImages() {
+      const { count, bytes } = images.usage();
+      const mb = (bytes / 1024 / 1024).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const maxMb = Math.round(images.LIMITS.maxBytes / 1024 / 1024);
+      imgUsage.textContent = `Bildspeicher: ${count.toLocaleString('de-DE')} ${count === 1 ? 'Bild' : 'Bilder'}, ${mb} MB ` +
+        `(höchstens ${images.LIMITS.maxImages.toLocaleString('de-DE')} Bilder bzw. ${maxMb} MB).`;
+    }
+    renderImages();
+    const unsubImages = images.subscribe(() => { if (alive) renderImages(); });
+    const imagesSection = h('section', { class: 'card stack set-section', 'data-testid': 'set-images-section' },
+      h('h2', { class: 'set-heading' }, 'Bilder'),
+      h('label', { class: 'set-switch', for: 'set-images' }, imgToggle, h('span', null, 'Bilder aus Wikipedia anzeigen')),
+      h('p', { class: 'muted small' }, 'Die Begriffe deiner Listen werden dafür an Wikipedia gesendet.'),
+      imgUsage,
+      h('button', {
+        type: 'button', class: 'btn btn-block', 'data-testid': 'set-images-clear',
+        on: { click: async () => { await images.clear(); renderImages(); ui.toast('Bildspeicher geleert'); } },
+      }, 'Bildspeicher leeren'),
+    );
+
     /* ---------- Beschädigte Daten (nur sichtbar, wenn vorhanden) ---------- */
     const brokenSection = h('section', { class: 'card stack set-section', 'data-testid': 'set-broken', hidden: true });
 
@@ -186,6 +214,7 @@ export default {
         importError,
         fileInput,
       ),
+      imagesSection,
       h('section', { class: 'card stack set-section' },
         h('h2', { class: 'set-heading' }, 'Speicher'),
         storageBox,
@@ -200,6 +229,6 @@ export default {
       renderStorage();
     });
 
-    return () => { alive = false; unsubscribe(); };
+    return () => { alive = false; unsubscribe(); unsubImages(); };
   },
 };

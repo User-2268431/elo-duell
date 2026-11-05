@@ -4,7 +4,7 @@ Mit Elo-Duell findet ihr heraus, was euch wirklich am besten gefällt: Urlaubszi
 
 **Adresse:** https://user-2268431.github.io/elo-duell/
 
-Kein Konto, keine Anmeldung. Alle Daten bleiben auf deinem Handy.
+Kein Konto, keine Anmeldung. Alle Daten bleiben auf deinem Handy. Nur für die Bilder werden die Begriffe deiner Listen an Wikipedia geschickt – das kannst du abschalten (siehe „Bilder“).
 
 ---
 
@@ -84,6 +84,15 @@ Zusätzlich muss jede Option oft genug dran gewesen sein. Du kannst jederzeit au
 Tippe in der Liste auf **„Rangliste“**. Du siehst für jede Option den Platz, den Namen, die Punkte und die Zahl ihrer Duelle.
 
 Alle Optionen starten mit 1.000 Punkten. Wer gewinnt, bekommt Punkte vom Verlierer. Ein Sieg gegen eine starke Option bringt mehr als gegen eine schwache. Optionen, die noch kein Duell hatten, stehen mit dem Hinweis „neu“ am Ende.
+
+### Bilder
+
+Zu vielen Optionen zeigt die App ein Bild – groß auf den Duell-Karten, klein in der Rangliste. Die Bilder kommen aus **Wikipedia** (erst die deutsche, dann die englische). Ein Tipp auf „Bild: Wikipedia“ öffnet den Artikel in einem neuen Tab, das zählt nicht als Duell. Findet die App kein passendes Foto, bleibt die Karte wie gewohnt ohne Bild.
+
+- **Datenschutz:** Die Begriffe deiner Listen werden dafür an Wikipedia gesendet.
+- **Speicher:** höchstens 300 Bilder bzw. etwa 20 MB; ältere, lange nicht gezeigte Bilder werden automatisch gelöscht, ebenso Bilder gelöschter Optionen.
+- **Abschalten:** In den Einstellungen unter „Bilder“ mit dem Schalter „Bilder aus Wikipedia anzeigen“. Dort siehst du auch den belegten Bildspeicher und kannst ihn leeren.
+- **Offline** siehst du nur Bilder, die schon einmal geladen wurden. Bilder sind nicht Teil des Teilen-Links und nicht der Sicherungsdatei.
 
 ---
 

@@ -1,6 +1,7 @@
 // Eigentümer: C – View list (Zentrale einer Liste) (docs/ARCHITEKTUR.md §6, §7).
 import { h, icon, fmtDate } from '../ui.js';
 import { progress } from '../logic/stability.js';
+import { loadImagesForList } from '../images.js';
 
 /** @param {number} n @param {string} one @param {string} many */
 function plural(n, one, many) {
@@ -78,6 +79,7 @@ export default {
     }
 
     draw();
+    loadImagesForList(store, id);   // Bilder im Hintergrund vorbereiten (für Duell und Rangliste)
     return store.subscribe(() => { if (root.contains(box)) draw(); });
   },
 };

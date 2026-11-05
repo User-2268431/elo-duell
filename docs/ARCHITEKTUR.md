@@ -42,6 +42,7 @@ js/views/home.js  list-edit.js  list.js  duel.js  ranking.js       C
 js/views/settings.js                                               B
 js/views/share.js  scan.js  import.js  compare.js                  D
 js/pwa.js  js/version.js                                           E
+js/images.js               Bilder aus Wikipedia (v1.0.2): Cache `elo-duell-img`, Metadaten `elo-duell:img`, LRU-Grenzen
 vendor/qrcode-generator.mjs + LICENSE-qrcode-generator (MIT)        D
 vendor/jsQR.js (min) + LICENSE-jsQR (Apache-2.0)                    D
 vendor/package.json        E  {"type":"commonjs"}, damit Node-Tests jsQR per createRequire laden können
@@ -340,7 +341,7 @@ Hash-basiert. **Routen beginnen mit `#/`, Importdaten mit `#i=`.** Ein leerer Ha
 - **Manifest:** `id`/`start_url`/`scope` = `"./"`, `name` und `short_name` „Elo-Duell“, `display:"standalone"`, `lang:"de"`, `theme_color` und `background_color` `#f7f7fb`. Icons: PNG 192 und 512 (`any`), 512 `maskable` (Motiv in den inneren 80 %), dazu das SVG. Erzeugt mit `node tools/make-icons.mjs` (Playwright-Screenshot), eingecheckt.
 - **sw.js:**
   - `install`: `caches.open('elo-duell-'+VERSION)`, `addAll(PRECACHE.map(u => new Request(u,{cache:'reload'})))`.
-  - `activate`: löscht nur Caches mit Präfix `elo-duell-` außer dem aktuellen, dann `clients.claim()`.
+  - `activate`: löscht nur Caches mit Präfix `elo-duell-` außer dem aktuellen und dem Bildcache `elo-duell-img`, dann `clients.claim()`.
   - `fetch`: nur GET und Same-Origin. Navigation → `index.html` aus dem Cache (Fragment bleibt erhalten). Sonst cache-first (`ignoreSearch`) mit Netz-Fallback.
   - `message`: `e.data?.type === 'SKIP_WAITING'` → `skipWaiting()`. Nie automatisch.
 - **Update-Banner** (E, `ui.setBanner('update', …)`): „Neue Version verfügbar“ mit „Neu laden“ → `apply()`.

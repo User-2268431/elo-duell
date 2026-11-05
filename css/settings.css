@@ -40,3 +40,11 @@
   text-align: center;
   margin: 0;
 }
+
+/* Schalter „Bilder aus Wikipedia anzeigen“ */
+.set-switch {
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--tap, 48px);
+  font-weight: 600; cursor: pointer;
+}
+.set-check { width: 24px; height: 24px; flex: none; margin: 0; accent-color: var(--accent); }
