@@ -269,4 +269,13 @@ export default {
   'hint.provisional': { one: 'Ranking provisional – about {n} more duel until it is stable', other: 'Ranking provisional – about {n} more duels until it is stable' },
   'hint.newOption': { one: 'New option – about {n} more duel until the first ranking', other: 'New option – about {n} more duels until the first ranking' },
   'hint.start': { one: 'About {n} more duel until the first ranking', other: 'About {n} more duels until the first ranking' },
+  'data.invalidGeneric': 'The data is faulty.',
+  // Share result (js/share/result-image.js)
+  'result.button': 'Share result',
+  'result.me': 'Me',
+  'result.subtitle': { one: 'Our favourite · {me} & {partner}', other: 'Our top {n} · {me} & {partner}' },
+  'result.credit': 'Photos: Wikipedia',
+  'result.shareText': 'Our shared result “{list}”: {names}',
+  'result.saved': 'Image saved: {file}',
+  'result.failed': 'The image could not be created',
 };

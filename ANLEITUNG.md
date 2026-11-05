@@ -117,6 +117,8 @@ Zu vielen Optionen zeigt die App ein Bild – groß auf den Duell-Karten, klein 
 
 Darunter seht ihr, welche Optionen nur eine Person in ihrer Liste hat.
 
+Mit **„Ergebnis teilen“** (erscheint, sobald es mindestens einen gemeinsamen Favoriten gibt) erstellt die App ein Bild eurer gemeinsamen Top 3 – mit Fotos, falls vorhanden – und öffnet das Teilen-Menü (z. B. WhatsApp); ohne Teilen-Menü wird das Bild heruntergeladen. Das Bild entsteht offline auf dem Handy.
+
 ### Gut zu wissen
 
 - **Links aus Messengern in Chrome öffnen:** WhatsApp, Telegram, Instagram und Co. öffnen Links oft in einem eigenen Browser mit eigenem Speicher. Tippe dort auf **⋮ → „In Chrome öffnen“**, sonst landet die Rangliste nicht in deiner App. Die App weist dich darauf hin.

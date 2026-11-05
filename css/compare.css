@@ -36,3 +36,5 @@
 .cmp-only-body { padding-top: 8px; }
 .cmp-only-list { margin: 6px 0 0; padding-left: 1.25em; }
 .cmp-share-back { margin-top: 4px; }
+.cmp-share-image { gap: 8px; }
+.cmp-share-image:disabled { opacity: 0.6; }

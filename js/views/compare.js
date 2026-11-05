@@ -1,13 +1,55 @@
 // Eigentümer: D – View compare (docs/ARCHITEKTUR.md §4A Vergleichsregeln, §6, §7).
-import { h, toast, confirmDialog, fmtDate } from '../ui.js';
+import { h, icon, toast, confirmDialog, fmtDate } from '../ui.js';
 import { compareRankings, excludedThreshold } from '../logic/compare.js';
 import { progress } from '../logic/stability.js';
-import { t } from '../i18n.js';
+import { t, getLang } from '../i18n.js';
+import { images } from '../images.js';
+import { resultTexts, renderResultImage, canvasToPng, resultFileName, pickTop } from '../share/result-image.js';
 
 /** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
 const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
 
 /** @typedef {import('../logic/compare.js').CmpItem} CmpItem */
+
+/** PNG herunterladen (Fallback ohne Web Share mit Dateien). @param {Blob} blob @param {string} name */
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = /** @type {HTMLAnchorElement} */ (h('a', { href: url, download: name, hidden: true }));
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/**
+ * Ergebnisbild (Top 3 der gemeinsamen Favoriten) erzeugen und teilen bzw. herunterladen.
+ * Fotos nur aus dem eigenen Bildspeicher (blob:-URLs), damit das Canvas nicht „tainted“ wird.
+ * @param {{listName:string, me:string, partner:string, favorites:CmpItem[]}} o
+ */
+async function shareResultImage(o) {
+  /** @type {Record<string, string|null>} */ const urls = {};
+  const names = pickTop(o.favorites).map((r) => r.name);
+  if (images.enabled()) {
+    try { await images.preload(names); } catch { /* ohne Fotos weiter */ }
+    for (const n of names) urls[n] = images.urlFor(n);
+  }
+  const tx = resultTexts({ ...o, photos: Object.values(urls).some(Boolean) });
+  const { canvas } = await renderResultImage(tx, urls);
+  const blob = await canvasToPng(canvas);
+  const fileName = resultFileName(new Date(), getLang());
+  const file = new File([blob], fileName, { type: 'image/png' });
+  const nav = /** @type {any} */ (navigator);
+  if (typeof nav.share === 'function' && typeof nav.canShare === 'function' && nav.canShare({ files: [file] })) {
+    try {
+      await nav.share({ files: [file], title: tx.title, text: tx.shareText });
+      return;
+    } catch (err) {
+      if (/** @type {any} */ (err)?.name === 'AbortError') return; // Nutzer hat abgebrochen
+    }
+  }
+  downloadBlob(blob, fileName);
+  toast(t('result.saved', { file: fileName }));
+}
 
 /** @param {any} ctx */
 function partnerOf(ctx) {
@@ -30,6 +72,29 @@ export default {
     const box = h('div', { class: 'stack cmp-view' });
     root.append(box);
     let leaving = false;
+
+    let busy = false;
+    /** @param {any} list @param {string} who @param {CmpItem[]} favorites */
+    function resultBtn(list, who, favorites) {
+      const btn = /** @type {HTMLButtonElement} */ (h('button', {
+        type: 'button', class: 'btn btn-block cmp-share-image', 'data-testid': 'cmp-share-image', disabled: busy,
+        on: { click: async () => {
+          if (busy) return;
+          busy = true;
+          btn.disabled = true;
+          try {
+            await shareResultImage({ listName: list.name, me: store.getDevice().name, partner: who, favorites });
+          } catch (e) {
+            console.error(e);
+            toast(t('result.failed'));
+          } finally {
+            busy = false;
+            btn.disabled = false;
+          }
+        } },
+      }, icon('share'), t('result.button')));
+      return btn;
+    }
 
     function draw() {
       if (leaving) return;
@@ -130,6 +195,7 @@ export default {
           ? h('p', { class: 'card cmp-too-few', 'data-testid': 'cmp-too-few' }, t('cmp.tooFew'))
           : null,
         m >= 2 ? section('favorites', t('cmp.fav'), t('cmp.favIntro'), res.favorites, t('cmp.favEmpty'), false) : null,
+        m >= 2 && res.favorites.length >= 1 ? resultBtn(list, who, res.favorites) : null,
         m >= 2 ? section('excluded', t('cmp.excl'), t('cmp.exclIntro'), res.excluded, t('cmp.exclEmpty'), true) : null,
         m >= 2 ? section('talk', t('cmp.talk'), t('cmp.talkIntro'), res.talk, t('cmp.talkEmpty'), true) : null,
         onlyPart,

@@ -205,6 +205,8 @@ export function migrateWithReport(raw) {
   fixOrder(s);
   const errors = validateState(s);
   if (errors.length) {
+    // Feld-Details (validateState) sind interne, deutsche Diagnosetexte: nur in der deutschen Oberfläche anhängen.
+    if (getLang() !== 'de') throw new SchemaError(t('data.invalidGeneric'));
     const more = errors.length > 3 ? ' ' + t('data.more', { n: errors.length - 3 }) : '';
     throw new SchemaError(t('data.invalid', { details: errors.slice(0, 3).join('; ') + more }));
   }

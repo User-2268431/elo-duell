@@ -26,6 +26,7 @@ Elo-Duell helps you find out what you really like best from a list of options (h
 2. Both of you duel on your own phone.
 3. Both share your ranking: the other person scans the QR code (“Scan QR”) or opens the link.
 4. The comparison shows **Shared favourites**, **Clear no-gos** and topics **Worth discussing**.
+5. **Share result** creates a picture of your shared top 3 (with photos, if available) and opens the share menu, or downloads it.
 
 A German and an English phone can exchange lists and rankings – the data does not depend on the language.
 

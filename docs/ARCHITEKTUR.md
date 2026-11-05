@@ -37,7 +37,7 @@ js/app.js                  C  Einstieg: store.init, initPwa, Router-Start, feste
 js/router.js  js/ui.js     C
 js/logic/elo.js  pairing.js  stability.js  compare.js  text.js     A
 js/data/store.js  schema.js  backup.js                             B
-js/share/codec.js  qr.js  scanner.js                               D
+js/share/codec.js  qr.js  scanner.js  result-image.js (v1.0.4)       D
 js/views/home.js  list-edit.js  list.js  duel.js  ranking.js       C
 js/views/settings.js                                               B
 js/views/share.js  scan.js  import.js  compare.js                  D

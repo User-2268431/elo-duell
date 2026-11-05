@@ -269,4 +269,13 @@ export default {
   'hint.provisional': { one: 'Rangliste vorläufig – noch ca. {n} Duell bis zur stabilen Rangliste', other: 'Rangliste vorläufig – noch ca. {n} Duelle bis zur stabilen Rangliste' },
   'hint.newOption': { one: 'Neue Option – noch ca. {n} Duell bis zur ersten Rangliste', other: 'Neue Option – noch ca. {n} Duelle bis zur ersten Rangliste' },
   'hint.start': { one: 'Noch ca. {n} Duell bis zur ersten Rangliste', other: 'Noch ca. {n} Duelle bis zur ersten Rangliste' },
+  'data.invalidGeneric': 'Die Daten sind fehlerhaft.',
+  // Ergebnis teilen (js/share/result-image.js)
+  'result.button': 'Ergebnis teilen',
+  'result.me': 'Ich',
+  'result.subtitle': { one: 'Unser Favorit · {me} & {partner}', other: 'Unsere Top {n} · {me} & {partner}' },
+  'result.credit': 'Fotos: Wikipedia',
+  'result.shareText': 'Unser gemeinsamer Endstand „{list}“: {names}',
+  'result.saved': 'Bild gespeichert: {file}',
+  'result.failed': 'Das Bild konnte nicht erstellt werden',
 };

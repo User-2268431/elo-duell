@@ -8,7 +8,7 @@ import { getLang } from './i18n.js';
 
 export const IMG_CACHE = 'elo-duell-img';
 export const META_KEY = 'elo-duell:img';
-export const API_USER_AGENT = 'Elo-Duell/1.0.3 (https://github.com/User-2268431/elo-duell)';
+export const API_USER_AGENT = 'Elo-Duell/1.0.4 (https://github.com/User-2268431/elo-duell)';
 const DAY = 24 * 60 * 60 * 1000;
 export const LIMITS = Object.freeze({
   maxImages: 300,

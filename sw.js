@@ -1,6 +1,6 @@
 // Eigentümer: E – Service Worker (docs/ARCHITEKTUR.md §8, §9). Klassisches Skript, kein Modul.
 // VERSION muss gleich js/version.js sein; bei jedem Deploy erhöhen.
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const PREFIX = 'elo-duell-';
 const CACHE = PREFIX + VERSION;
 // Bildspeicher (js/images.js) überlebt Updates; Wikimedia-Anfragen laufen nicht über den SW (nur Same-Origin).
@@ -40,6 +40,7 @@ const PRECACHE = [
   './js/router.js',
   './js/share/codec.js',
   './js/share/qr.js',
+  './js/share/result-image.js',
   './js/share/scanner.js',
   './js/types.js',
   './js/ui.js',

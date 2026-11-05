@@ -12,8 +12,9 @@
 .duel-bar { height: 8px; }
 .duel-hint {
   color: var(--muted); font-size: 1rem; line-height: 1.3;
-  /* einzeilig, damit Karten und Buttons ohne Scrollen passen; voller Text in Zentrale und Rangliste */
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* höchstens zwei Zeilen (lange Hinweise, v. a. Englisch), Karten und Buttons passen weiter ohne Scrollen */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow: hidden; overflow-wrap: anywhere;
 }
 .duel-question { font-size: 1.25rem; text-align: center; }
 

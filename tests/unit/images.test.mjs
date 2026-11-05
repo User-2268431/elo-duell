@@ -90,7 +90,7 @@ test('Wappen im Summary → erstes Foto aus media-list; Api-User-Agent wird gese
   assert.equal(en.src, 'https://thumb.wikimedia.org/w/Nyhavn.jpg/500px-Nyhavn.jpg');
   assert.equal(en.lang, 'de');
   assert.equal(en.page, 'https://de.wikipedia.org/wiki/Kopenhagen');
-  assert.equal(e.calls[0].init.headers['Api-User-Agent'].startsWith('Elo-Duell/1.0.3'), true);
+  assert.equal(e.calls[0].init.headers['Api-User-Agent'].startsWith('Elo-Duell/1.0.4'), true);
   assert.equal(e.calls[2].init.headers, undefined, 'Bild ohne Zusatz-Header (kein Preflight)');
   assert.ok(e.caches.data.has(en.src));
   assert.deepEqual(e.inst.usage(), { count: 1, bytes: 2000 });
