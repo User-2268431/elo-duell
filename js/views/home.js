@@ -1,15 +1,11 @@
 // Eigentümer: C – View home (docs/ARCHITEKTUR.md §6, §7).
 import { h, icon } from '../ui.js';
 import { progress } from '../logic/stability.js';
+import { t } from '../i18n.js';
 
 /** @param {any} list */
 function safeProgress(list) {
   try { return progress(list); } catch { return null; }
-}
-
-/** @param {number} n @param {string} one @param {string} many */
-function plural(n, one, many) {
-  return `${n.toLocaleString('de-DE')} ${n === 1 ? one : many}`;
 }
 
 export default {
@@ -20,7 +16,7 @@ export default {
 
     document.getElementById('bar-actions')?.append(
       h('button', {
-        type: 'button', class: 'btn btn-ghost btn-icon', 'data-testid': 'home-settings', 'aria-label': 'Einstellungen',
+        type: 'button', class: 'btn btn-ghost btn-icon', 'data-testid': 'home-settings', 'aria-label': t('settings.title'),
         on: { click: () => navigate('#/einstellungen') },
       }, icon('gear', 24)),
     );
@@ -31,8 +27,8 @@ export default {
       const lists = store.listLists();
       if (!lists.length) {
         listBox.replaceChildren(h('div', { class: 'card empty lists-empty' },
-          h('h2', null, 'Noch keine Listen'),
-          h('p', null, 'Lege eine Liste an, zum Beispiel Urlaubsziele, Restaurants oder Filme – und finde im Duell heraus, was dir am besten gefällt.'),
+          h('h2', null, t('home.empty.title')),
+          h('p', null, t('home.empty.text')),
         ));
         return;
       }
@@ -46,12 +42,12 @@ export default {
           h('div', { class: 'lists-card-main' },
             h('h2', { class: 'lists-card-name' }, list.name),
             h('p', { class: 'lists-card-meta' },
-              plural(n, 'Option', 'Optionen'), ' · ', plural(m, 'Duell', 'Duelle'),
-              p && p.level === 'stabil' ? h('span', { class: 'badge lists-badge-ok' }, 'stabil') : null,
-              list.partners?.length ? h('span', { class: 'badge' }, plural(list.partners.length, 'Partner', 'Partner')) : null,
+              t('common.options', { n }), ' · ', t('common.duels', { n: m }),
+              p && p.level === 'stabil' ? h('span', { class: 'badge lists-badge-ok' }, t('common.stable')) : null,
+              list.partners?.length ? h('span', { class: 'badge' }, t('home.partners', { n: list.partners.length })) : null,
             ),
             h('div', { class: ['bar', p?.level === 'stabil' && 'is-stable'], role: 'progressbar',
-              'aria-label': 'Fortschritt', 'aria-valuemin': 0, 'aria-valuemax': 100,
+              'aria-label': t('common.progress'), 'aria-valuemin': 0, 'aria-valuemax': 100,
               'aria-valuenow': Math.round((p?.ratio ?? 0) * 100), style: { '--p': p?.ratio ?? 0 } }, h('span')),
           ),
           h('span', { class: 'lists-card-chevron' }, icon('chevron', 22)),
@@ -64,9 +60,9 @@ export default {
         listBox,
         h('div', { class: 'bottom-bar' },
           h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'home-new',
-            on: { click: () => navigate('#/neu') } }, icon('plus'), 'Neue Liste'),
+            on: { click: () => navigate('#/neu') } }, icon('plus'), t('home.new')),
           h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'home-scan',
-            on: { click: () => navigate('#/scan') } }, icon('scan'), 'QR scannen'),
+            on: { click: () => navigate('#/scan') } }, icon('scan'), t('scan.title')),
         ),
       ),
     );

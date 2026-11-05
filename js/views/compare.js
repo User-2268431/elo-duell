@@ -2,6 +2,7 @@
 import { h, toast, confirmDialog, fmtDate } from '../ui.js';
 import { compareRankings, excludedThreshold } from '../logic/compare.js';
 import { progress } from '../logic/stability.js';
+import { t } from '../i18n.js';
 
 /** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
 const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
@@ -19,7 +20,7 @@ export default {
   /** @param {any} ctx */
   title: (ctx) => {
     const { partner } = partnerOf(ctx);
-    return partner ? `Vergleich mit ${partner.name || 'Partner'}` : 'Vergleich';
+    return partner ? t('cmp.titleWith', { name: partner.name || t('common.partner') }) : t('cmp.title');
   },
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
@@ -35,24 +36,24 @@ export default {
       const { list, partner } = partnerOf(ctx);
       if (!list) { navigate('#/', { replace: true }); return; }
       if (!partner) {
-        toast('Vergleich nicht gefunden');
+        toast(t('cmp.notFound'));
         navigate(`#/liste/${enc}`, { replace: true });
         return;
       }
-      const who = partner.name || 'Partner';
+      const who = partner.name || t('common.partner');
       const res = compareRankings(list.options, partner.options);
       const m = res.common;
-      const t = excludedThreshold(m);
+      const thr = excludedThreshold(m);
       const partial = res.onlyMine.length > 0 || res.onlyTheirs.length > 0;
 
       /** @param {CmpItem} it */
-      const places = (it) => `Platz ${it.rankA} bei dir · Platz ${it.rankB} bei ${who}${partial ? ` (von ${m} gemeinsamen)` : ''}`;
+      const places = (it) => t('cmp.places', { a: it.rankA, b: it.rankB, who }) + (partial ? ` ${t('cmp.ofCommon', { n: m })}` : '');
       /** Veto: nur eine Person hat die Option in der unteren Gruppe. @param {CmpItem} it */
       const vetoText = (it) => {
-        const lowA = it.rankA > m - t, lowB = it.rankB > m - t;
-        if (lowA && !lowB) return 'Veto: bei dir ganz unten';
-        if (lowB && !lowA) return `Veto: bei ${who} ganz unten`;
-        return it.veto ? 'bei einer Person ganz unten' : null;
+        const lowA = it.rankA > m - thr, lowB = it.rankB > m - thr;
+        if (lowA && !lowB) return t('cmp.vetoMine');
+        if (lowB && !lowA) return t('cmp.vetoTheirs', { who });
+        return it.veto ? t('cmp.vetoOne') : null;
       };
 
       /**
@@ -79,26 +80,26 @@ export default {
       const partnerLevel = progress({ options: partner.options }).level;
       const hint = ownLevel === 'start' || partnerLevel === 'start'
         ? h('section', { class: 'card stack cmp-hint', 'data-testid': 'cmp-hint' },
-          ownLevel === 'start' ? h('p', {}, 'Du hast noch kaum duelliert – der Vergleich ist noch ungenau.') : null,
+          ownLevel === 'start' ? h('p', {}, t('cmp.hintOwn')) : null,
           ownLevel === 'start'
             ? h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'cmp-hint-duel',
-              on: { click: () => navigate(`#/duell/${enc}`) } }, 'Duelliere erst selbst')
+              on: { click: () => navigate(`#/duell/${enc}`) } }, t('cmp.hintDuel'))
             : null,
-          partnerLevel === 'start' ? h('p', {}, `${who} hat noch kaum duelliert – bitte ${who}, weiterzumachen und dir die Rangliste neu zu schicken.`) : null,
+          partnerLevel === 'start' ? h('p', {}, t('cmp.hintPartner', { who })) : null,
         )
         : null;
 
       const onlyPart = partial
         ? h('details', { class: 'card cmp-only' },
-          h('summary', { class: 'cmp-only-summary' }, `Nur bei dir / nur bei ${who}`),
+          h('summary', { class: 'cmp-only-summary' }, t('cmp.onlySummary', { who })),
           h('div', { class: 'stack cmp-only-body' },
             h('div', {},
-              h('h3', {}, `Nur bei dir (${res.onlyMine.length.toLocaleString('de-DE')})`),
+              h('h3', {}, t('cmp.onlyMine', { n: res.onlyMine.length })),
               res.onlyMine.length
                 ? h('ul', { class: 'cmp-only-list', 'data-testid': 'cmp-only-mine' }, ...res.onlyMine.map((n) => h('li', {}, n)))
                 : h('p', { class: 'muted', 'data-testid': 'cmp-only-mine' }, '–')),
             h('div', {},
-              h('h3', {}, `Nur bei ${who} (${res.onlyTheirs.length.toLocaleString('de-DE')})`),
+              h('h3', {}, t('cmp.onlyTheirs', { who, n: res.onlyTheirs.length })),
               res.onlyTheirs.length
                 ? h('ul', { class: 'cmp-only-list', 'data-testid': 'cmp-only-theirs' }, ...res.onlyTheirs.map((n) => h('li', {}, n)))
                 : h('p', { class: 'muted', 'data-testid': 'cmp-only-theirs' }, '–')),
@@ -109,34 +110,31 @@ export default {
       const removeBtn = h('button', { type: 'button', class: 'btn btn-ghost cmp-remove', 'data-testid': 'cmp-remove-partner',
         on: { click: async () => {
           const ok = await confirmDialog({
-            title: 'Partner entfernen?', text: `Die Rangliste von ${who} wird von diesem Gerät gelöscht.`,
-            okLabel: 'Entfernen', danger: true,
+            title: t('cmp.removeTitle'), text: t('cmp.removeText', { who }),
+            okLabel: t('cmp.removeOk'), danger: true,
           });
           if (!ok) return;
           leaving = true;
           store.removePartner(id, partner.deviceId);
-          toast(`Rangliste von ${who} entfernt`);
+          toast(t('cmp.removed', { who }));
           navigate(`#/liste/${enc}`, { replace: true });
-        } } }, 'Partner entfernen');
+        } } }, t('cmp.remove'));
 
       fill(box, 
         h('div', { class: 'cmp-head row' },
-          h('p', { class: 'cmp-date muted', 'data-testid': 'cmp-partner-date' }, `Stand von ${who}: ${fmtDate(partner.sentAt)}`),
+          h('p', { class: 'cmp-date muted', 'data-testid': 'cmp-partner-date' }, t('cmp.date', { who, date: fmtDate(partner.sentAt) })),
           removeBtn,
         ),
         hint,
         m < 2
-          ? h('p', { class: 'card cmp-too-few', 'data-testid': 'cmp-too-few' }, 'Zu wenig gemeinsame Optionen für einen Vergleich')
+          ? h('p', { class: 'card cmp-too-few', 'data-testid': 'cmp-too-few' }, t('cmp.tooFew'))
           : null,
-        m >= 2 ? section('favorites', 'Gemeinsame Favoriten', 'Liegen bei euch beiden weit vorn.', res.favorites,
-          'Keine gemeinsamen Favoriten – jede Option liegt bei einem von euch weit unten.', false) : null,
-        m >= 2 ? section('excluded', 'Klare Ausschlüsse', 'Liegen bei mindestens einer Person ganz unten.', res.excluded,
-          'Keine klaren Ausschlüsse.', true) : null,
-        m >= 2 ? section('talk', 'Gesprächsstoff', 'Hier seht ihr es sehr unterschiedlich.', res.talk,
-          'Ihr seid euch weitgehend einig.', true) : null,
+        m >= 2 ? section('favorites', t('cmp.fav'), t('cmp.favIntro'), res.favorites, t('cmp.favEmpty'), false) : null,
+        m >= 2 ? section('excluded', t('cmp.excl'), t('cmp.exclIntro'), res.excluded, t('cmp.exclEmpty'), true) : null,
+        m >= 2 ? section('talk', t('cmp.talk'), t('cmp.talkIntro'), res.talk, t('cmp.talkEmpty'), true) : null,
         onlyPart,
         h('button', { type: 'button', class: 'btn btn-primary btn-block cmp-share-back', 'data-testid': 'cmp-share-back',
-          on: { click: () => navigate(`#/teilen/${enc}`) } }, `Meine Rangliste an ${who} zurückschicken`),
+          on: { click: () => navigate(`#/teilen/${enc}`) } }, t('cmp.shareBack', { who })),
       );
     }
 

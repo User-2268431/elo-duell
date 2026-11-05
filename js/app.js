@@ -4,6 +4,7 @@ import { initPwa } from './pwa.js';
 import { startRouter, navigate, openImport, getPendingImport, clearPendingImport } from './router.js';
 import * as ui from './ui.js';
 import { images } from './images.js';
+import { setLang, t } from './i18n.js';
 
 import home from './views/home.js';
 import listEdit from './views/list-edit.js';
@@ -31,19 +32,27 @@ const routes = [
   { pattern: '#/einstellungen', view: settings, parent: () => '#/' },
 ];
 
+// Sprache vor store.init setzen, damit Warnungen und die Beispielliste schon in der richtigen Sprache entstehen.
+setLang(readLangSetting());
 const { warning } = store.init();
+setLang(store.getSettings().lang);
 if (warning) ui.setBanner('storage', warning);
 store.onWarning((msg) => ui.setBanner('storage', msg));
 images.setEnabledSource(() => store.getSettings().images !== false);
 // In-App-WebViews (Telegram, Instagram, Facebook, Android-WebView) haben eigenen Speicher (§12).
 if (/; wv\)|Instagram|FBAN|FBAV|Telegram/i.test(navigator.userAgent || '')) {
-  ui.setBanner('webview', 'Bitte in Chrome öffnen – in diesem eingebauten Browser bleiben deine Listen nicht erhalten.');
+  ui.setBanner('webview', t('pwa.webview'));
 }
 
 initPwa({
   onUpdateReady(apply) {
-    ui.setBanner('update', 'Neue Version verfügbar', { label: 'Neu laden', onClick: apply });
+    ui.setBanner('update', t('pwa.update'), { label: t('pwa.reload'), onClick: apply });
   },
 });
+
+/** Sprach-Einstellung direkt aus dem gespeicherten State (vor store.init). @returns {string} */
+function readLangSetting() {
+  try { return JSON.parse(localStorage.getItem('elo-duell:state') || '{}')?.settings?.lang || 'auto'; } catch { return 'auto'; }
+}
 
 startRouter(routes, { store, navigate, openImport, getPendingImport, clearPendingImport, ui });

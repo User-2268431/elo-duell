@@ -2,6 +2,7 @@
 // DOM-frei, in Node importierbar.
 /** @typedef {import('../types.js').AppState} AppState */
 /** @typedef {import('../types.js').List} List */
+import { t, getLang } from '../i18n.js';
 
 export const SCHEMA = 1;
 
@@ -10,10 +11,16 @@ export class SchemaError extends Error {
   constructor(message) { super(message); this.name = 'SchemaError'; }
 }
 
-/** ID der festen Beispielliste. */
+/** ID der festen Beispielliste (deutsch); die englische hat eine eigene feste ID. */
 export const EXAMPLE_LIST_ID = 'l_beispiel01';
-const EXAMPLE_NAME = 'Urlaubsziele';
-const EXAMPLE_OPTIONS = ['Lissabon', 'Kopenhagen', 'Rom', 'Bergen', 'Dolomiten', 'Kreta', 'Edinburgh', 'Ostsee'];
+export const EXAMPLE_LIST_ID_EN = 'l_example01';
+/** Beispiellisten je Sprache (Inhalt ist Daten, nicht UI: einmal angelegt, bleibt er in der Sprache). */
+const EXAMPLES = {
+  de: { id: EXAMPLE_LIST_ID, optPrefix: 'o_bsp', name: 'Urlaubsziele',
+    options: ['Lissabon', 'Kopenhagen', 'Rom', 'Bergen', 'Dolomiten', 'Kreta', 'Edinburgh', 'Ostsee'] },
+  en: { id: EXAMPLE_LIST_ID_EN, optPrefix: 'o_exa', name: 'Holiday destinations',
+    options: ['Lisbon', 'Copenhagen', 'Rome', 'Bergen', 'Dolomites', 'Crete', 'Edinburgh', 'Baltic Sea'] },
+};
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -36,21 +43,23 @@ export function newId(prefix, len) {
 }
 
 /**
- * Default-State mit Beispielliste „Urlaubsziele“ (ID l_beispiel01) und frischer Geräte-ID.
- * @param {number} [now] ms seit Epoch (für Tests)
+ * Default-State mit Beispielliste (de: „Urlaubsziele“, l_beispiel01; en: „Holiday destinations“, l_example01)
+ * und frischer Geräte-ID.
+ * @param {number} [now] ms seit Epoch (für Tests) @param {'de'|'en'} [lang] Standard: aktuelle UI-Sprache
  * @returns {AppState}
  */
-export function defaultState(now = Date.now()) {
+export function defaultState(now = Date.now(), lang = getLang()) {
+  const ex = EXAMPLES[lang] || EXAMPLES.de;
   /** @type {List} */
   const example = {
-    id: EXAMPLE_LIST_ID,
+    id: ex.id,
     aliases: [],
-    name: EXAMPLE_NAME,
+    name: ex.name,
     createdAt: now,
     updatedAt: now,
     stableShown: false,
-    options: EXAMPLE_OPTIONS.map((name, i) => ({
-      id: 'o_bsp' + String(i + 1).padStart(3, '0'),
+    options: ex.options.map((name, i) => ({
+      id: ex.optPrefix + String(i + 1).padStart(3, '0'),
       name, rating: 1000, duels: 0, wins: 0, draws: 0, losses: 0,
     })),
     history: [],
@@ -59,8 +68,8 @@ export function defaultState(now = Date.now()) {
   return {
     schema: SCHEMA,
     device: { id: newId('d_', 10), name: '' },
-    lists: { [EXAMPLE_LIST_ID]: example },
-    order: [EXAMPLE_LIST_ID],
+    lists: { [ex.id]: example },
+    order: [ex.id],
     settings: {},
   };
 }
@@ -136,7 +145,7 @@ function repair(s) {
   for (const [key, l] of Object.entries(s.lists)) {
     if (!isObj(l) || key === '__proto__') { delete s.lists[key]; n++; continue; }
     if (l.id !== key) { l.id = key; n++; }
-    if (!isStr(l.name)) { l.name = 'Liste'; n++; }
+    if (!isStr(l.name)) { l.name = t('common.list'); n++; }
     if (!l.aliases.every(isStr)) { l.aliases = l.aliases.filter(isStr); n++; }
     if (!Array.isArray(l.options)) { l.options = []; n++; }
     const optIds = new Set();
@@ -178,16 +187,16 @@ function repair(s) {
 export function migrateWithReport(raw) {
   let s = raw;
   if (typeof s === 'string') {
-    try { s = JSON.parse(s); } catch { throw new SchemaError('Die Daten sind kein gültiges JSON.'); }
+    try { s = JSON.parse(s); } catch { throw new SchemaError(t('data.noJson')); }
   }
-  if (!isObj(s)) throw new SchemaError('Die Daten haben ein unbekanntes Format.');
-  try { s = JSON.parse(JSON.stringify(s)); } catch { throw new SchemaError('Die Daten lassen sich nicht lesen.'); }
+  if (!isObj(s)) throw new SchemaError(t('data.unknownFormat'));
+  try { s = JSON.parse(JSON.stringify(s)); } catch { throw new SchemaError(t('data.unreadable')); }
   let version = s.schema === undefined ? 0 : s.schema;
-  if (!Number.isInteger(version) || version < 0) throw new SchemaError('Unbekannte Datenversion.');
-  if (version > SCHEMA) throw new SchemaError('Die Daten stammen aus einer neueren App-Version. Bitte App aktualisieren.');
+  if (!Number.isInteger(version) || version < 0) throw new SchemaError(t('data.unknownVersion'));
+  if (version > SCHEMA) throw new SchemaError(t('data.newer'));
   while (version < SCHEMA) {
     const step = MIGRATIONS[version];
-    if (!step) throw new SchemaError(`Keine Migration von Version ${version} vorhanden.`);
+    if (!step) throw new SchemaError(t('data.noMigration', { v: version }));
     s = step(s);
     version++;
   }
@@ -196,8 +205,8 @@ export function migrateWithReport(raw) {
   fixOrder(s);
   const errors = validateState(s);
   if (errors.length) {
-    const more = errors.length > 3 ? ` (und ${errors.length - 3} weitere)` : '';
-    throw new SchemaError('Die Daten sind fehlerhaft: ' + errors.slice(0, 3).join('; ') + more);
+    const more = errors.length > 3 ? ' ' + t('data.more', { n: errors.length - 3 }) : '';
+    throw new SchemaError(t('data.invalid', { details: errors.slice(0, 3).join('; ') + more }));
   }
   return { state: /** @type {AppState} */ (s), repaired };
 }

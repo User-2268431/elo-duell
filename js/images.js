@@ -1,13 +1,14 @@
-// Bilder zu Optionen aus Wikipedia (v1.0.2). DOM-arm und in Node testbar (alle Abhängigkeiten injizierbar).
-// Ablauf je Begriff: de.wikipedia → (kein Foto) en.wikipedia. REST „page/summary“ liefert Seitentyp und Vorschaubild;
+// Bilder zu Optionen aus Wikipedia (seit v1.0.2). DOM-arm und in Node testbar (alle Abhängigkeiten injizierbar).
+// Ablauf je Begriff: Wikipedia der UI-Sprache → (kein Foto) die andere (de/en). REST „page/summary“ liefert Seitentyp und Vorschaubild;
 // ist das ein SVG (Wappen, Flagge, Karte, Logo) oder ein Symbolbild, wird über „page/media-list“ das erste Foto genommen.
 // Speicher: Bilddaten im Cache `elo-duell-img` (von sw.js beim activate verschont), Metadaten unter `elo-duell:img`.
 // Harte Grenzen (LRU): maxImages Bilder, maxBytes Byte, maxEntries Metadaten-Einträge (inkl. Miss-Marker).
 import { normalizeName } from './logic/text.js';
+import { getLang } from './i18n.js';
 
 export const IMG_CACHE = 'elo-duell-img';
 export const META_KEY = 'elo-duell:img';
-export const API_USER_AGENT = 'Elo-Duell/1.0.2 (https://github.com/User-2268431/elo-duell)';
+export const API_USER_AGENT = 'Elo-Duell/1.0.3 (https://github.com/User-2268431/elo-duell)';
 const DAY = 24 * 60 * 60 * 1000;
 export const LIMITS = Object.freeze({
   maxImages: 300,
@@ -21,7 +22,8 @@ export const LIMITS = Object.freeze({
   backoffMs: 4000,    // 4 s, 8 s, 16 s, 32 s
   width: 500,         // Vorschaubreite in px (Wikimedia-Standardstufe)
 });
-const LANGS = ['de', 'en'];
+/** Wikipedia-Sprachen in Suchreihenfolge: UI-Sprache zuerst (Deutsch: de → en, Englisch: en → de). */
+const langOrder = () => (getLang() === 'en' ? ['en', 'de'] : ['de', 'en']);
 const HOSTS = new Set(['upload.wikimedia.org', 'thumb.wikimedia.org']);
 /** Wörter im Dateinamen, die auf Wappen, Flaggen, Karten, Logos u. Ä. statt eines Fotos hindeuten. */
 const NOT_PHOTO = new Set(['wappen', 'coat', 'flag', 'flagge', 'fahne', 'logo', 'karte', 'map', 'locator', 'lagekarte',
@@ -109,6 +111,7 @@ export function createImages(deps = {}) {
   const sleep = deps.sleep || ((/** @type {number} */ ms) => new Promise((r) => setTimeout(r, ms)));
   const online = deps.online || (() => g.navigator?.onLine !== false);
   let isEnabled = deps.isEnabled || (() => true);
+  const langs = deps.langs || langOrder;
   const mkUrl = deps.createObjectURL || ((/** @type {Blob} */ b) => URL.createObjectURL(b));
   const rmUrl = deps.revokeObjectURL || ((/** @type {string} */ u) => URL.revokeObjectURL(u));
   /** @returns {Storage|null} */
@@ -209,10 +212,10 @@ export function createImages(deps = {}) {
   function cleanPage(u, lang) {
     try { const x = new URL(u); return x.protocol === 'https:' && x.hostname === `${lang}.wikipedia.org` ? x.href : null; } catch { return null; }
   }
-  /** de, dann en. @param {string} term @returns {Promise<Found|null>} */
+  /** UI-Sprache zuerst, dann die andere. @param {string} term @returns {Promise<Found|null>} */
   async function lookup(term) {
     if (!String(term).trim()) return null;
-    for (const lang of LANGS) {
+    for (const lang of langs()) {
       const f = await lookupLang(term, lang);
       if (f) return f;
     }

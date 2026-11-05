@@ -3,6 +3,7 @@
 import { applyResult, START_RATING } from '../logic/elo.js';
 import { normalizeName } from '../logic/text.js';
 import { defaultState, migrateWithReport, newId, SchemaError } from './schema.js';
+import { t as tr } from '../i18n.js';
 
 /** @typedef {import('../types.js').AppState} AppState */
 /** @typedef {import('../types.js').List} List */
@@ -25,13 +26,16 @@ const MAX_NAME = 120;
 const MAX_ALIASES = 20;
 const MATCH_MIN = 0.6;
 
-const MSG_MEMORY = 'Speichern ist in diesem Browser nicht möglich – Änderungen gehen beim Schließen verloren. Bitte Sicherung exportieren.';
-const MSG_QUOTA = 'Speicher voll – Änderungen gehen beim Schließen verloren. Bitte Sicherung exportieren (Einstellungen).';
-const MSG_WRITE = 'Speichern fehlgeschlagen – Änderungen gehen beim Schließen verloren. Bitte Sicherung exportieren.';
-const MSG_BROKEN = 'Gespeicherte Daten waren beschädigt und wurden beiseitegelegt. Die App startet mit der Beispielliste.';
-const MSG_BROKEN_KEPT = ' Die Originaldaten kannst du in den Einstellungen herunterladen.';
+// Meldungen in der aktuellen UI-Sprache (js/i18n.js); Getter, damit ein Sprachwechsel greift.
+const MSG = {
+  get MEMORY() { return tr('store.memory'); },
+  get QUOTA() { return tr('store.quota'); },
+  get WRITE() { return tr('store.write'); },
+  get BROKEN() { return tr('store.broken'); },
+  get BROKEN_KEPT() { return ' ' + tr('store.brokenKept'); },
+};
 /** @param {number} n */
-const msgRepaired = (n) => `Gespeicherte Daten waren teilweise beschädigt: ${n.toLocaleString('de-DE')} ${n === 1 ? 'beschädigter Eintrag' : 'beschädigte Einträge'} entfernt oder repariert.`;
+const msgRepaired = (n) => tr('store.repaired', { n });
 
 /** @template T @param {T} v @returns {T} */
 const clone = (v) => (typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
@@ -113,9 +117,9 @@ export function createStore(deps = {}) {
       const before = lastError;
       if (isSecurityError(err)) {
         mode = 'memory';
-        lastError = MSG_MEMORY;
+        lastError = MSG.MEMORY;
       } else {
-        lastError = isQuotaError(err) ? MSG_QUOTA : MSG_WRITE;
+        lastError = isQuotaError(err) ? MSG.QUOTA : MSG.WRITE;
       }
       return before === lastError ? null : lastError;
     }
@@ -270,9 +274,9 @@ export function createStore(deps = {}) {
       }
       if (!storage) {
         mode = 'memory';
-        lastError = MSG_MEMORY;
+        lastError = MSG.MEMORY;
         state = defaultState(now());
-        return { mode, warning: MSG_MEMORY };
+        return { mode, warning: MSG.MEMORY };
       }
       let skipInitialWrite = false;
       if (raw === null) {
@@ -284,7 +288,7 @@ export function createStore(deps = {}) {
           if (res.repaired > 0) {
             // Einzelne Einträge repariert/entfernt: Original beiseitelegen, reparierten Stand schreiben.
             const saved = keepBroken(raw);
-            warnings.push(msgRepaired(res.repaired) + (saved ? MSG_BROKEN_KEPT : ''));
+            warnings.push(msgRepaired(res.repaired) + (saved ? MSG.BROKEN_KEPT : ''));
             if (!saved) skipInitialWrite = true;
           } else {
             skipInitialWrite = true;     // unverändert, nichts zu schreiben
@@ -293,7 +297,7 @@ export function createStore(deps = {}) {
           const saved = keepBroken(raw);
           state = defaultState(now());
           rescueDevice(raw, state);
-          warnings.push(MSG_BROKEN + (saved ? MSG_BROKEN_KEPT : ''));
+          warnings.push(MSG.BROKEN + (saved ? MSG.BROKEN_KEPT : ''));
           // Konnte der Rohinhalt nicht gesichert werden, nicht sofort überschreiben.
           if (!saved) skipInitialWrite = true;
         }
@@ -343,7 +347,7 @@ export function createStore(deps = {}) {
       while (!listId || own(state.lists, listId)) listId = newId('l_', 10);
       /** @type {List} */
       const l = {
-        id: listId, aliases, name: cleanName(name) || 'Neue Liste', createdAt: t, updatedAt: t,
+        id: listId, aliases, name: cleanName(name) || tr('common.newList'), createdAt: t, updatedAt: t,
         stableShown: false, options: [], history: [], partners: [],
       };
       addNames(l, names);

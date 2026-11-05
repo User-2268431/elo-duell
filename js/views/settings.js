@@ -2,16 +2,17 @@
 import { backupFileName, downloadBackup, downloadBroken, readBackupFileDetailed } from '../data/backup.js';
 import { VERSION } from '../version.js';
 import { images } from '../images.js';
+import { t, fmtNumber, setLang } from '../i18n.js';
 
 /** @param {number} bytes @returns {string} */
 function fmtBytes(bytes) {
-  if (bytes < 1024) return `${bytes.toLocaleString('de-DE')} Byte`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024).toLocaleString('de-DE')} KB`;
-  return `${(bytes / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB`;
+  if (bytes < 1024) return `${fmtNumber(bytes)} Byte`;
+  if (bytes < 1024 * 1024) return `${fmtNumber(Math.round(bytes / 1024))} KB`;
+  return `${fmtNumber(bytes / 1024 / 1024, { maximumFractionDigits: 1 })} MB`;
 }
 
 export default {
-  title: 'Einstellungen',
+  title: () => t('settings.title'),
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
     const { store, ui } = ctx;
@@ -21,11 +22,11 @@ export default {
     /* ---------- Name ---------- */
     const nameInput = /** @type {HTMLInputElement} */ (h('input', {
       type: 'text', class: 'input', id: 'set-name', 'data-testid': 'set-name', maxlength: '120',
-      autocomplete: 'nickname', enterkeyhint: 'done', placeholder: 'z. B. Anna',
+      autocomplete: 'nickname', enterkeyhint: 'done', placeholder: t('settings.namePh'),
       value: store.getDevice().name,
       on: {
         input: () => store.setDeviceName(nameInput.value),
-        change: () => { store.setDeviceName(nameInput.value); ui.toast('Name gespeichert'); },
+        change: () => { store.setDeviceName(nameInput.value); ui.toast(t('settings.nameSaved')); },
         keydown: (/** @type {KeyboardEvent} */ e) => { if (e.key === 'Enter') nameInput.blur(); },
       },
     }));
@@ -54,32 +55,30 @@ export default {
       try {
         ({ state: next, repaired } = await readBackupFileDetailed(file));
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Die Sicherung konnte nicht gelesen werden.';
+        const msg = err instanceof Error ? err.message : t('backup.unreadable');
         showError(msg);
         ui.toast(msg);
         return;
       }
       const n = next.order.length;
       const ok = await ui.confirmDialog({
-        title: 'Sicherung importieren?',
-        text: `Die Sicherung enthält ${n.toLocaleString('de-DE')} ${n === 1 ? 'Liste' : 'Listen'}. ` +
-          (repaired > 0
-            ? `${repaired.toLocaleString('de-DE')} ${repaired === 1 ? 'beschädigter Eintrag wird' : 'beschädigte Einträge werden'} dabei entfernt oder repariert. `
-            : '') +
-          'Alle Listen auf diesem Gerät werden dadurch ersetzt. Das lässt sich nicht rückgängig machen.',
-        okLabel: 'Ersetzen',
+        title: t('settings.importTitle'),
+        text: t('settings.importContains', { lists: t('common.lists', { n }) }) + ' ' +
+          (repaired > 0 ? t('settings.importRepaired', { n: repaired }) + ' ' : '') +
+          t('settings.importReplace'),
+        okLabel: t('settings.importOk'),
         danger: true,
       });
       if (!ok || !alive) return;
       try {
         store.replaceAll(next);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Import fehlgeschlagen.';
+        const msg = err instanceof Error ? err.message : t('settings.importFailed');
         showError(msg);
         ui.toast(msg);
         return;
       }
-      ui.toast('Sicherung importiert');
+      ui.toast(t('settings.imported'));
       ctx.navigate('#/');
     }
 
@@ -93,11 +92,10 @@ export default {
         sum + l.options.reduce((s, /** @type {any} */ o) => s + o.duels, 0) / 2, 0);
       const lines = [
         h('p', { class: 'set-storage-mode' }, mode === 'local'
-          ? 'Deine Daten werden nur in diesem Browser auf diesem Gerät gespeichert.'
-          : 'Nur vorübergehend gespeichert: Dieser Browser erlaubt kein dauerhaftes Speichern. Beim Schließen gehen die Daten verloren.'),
+          ? t('settings.storageLocal')
+          : t('settings.storageMemory')),
         h('p', { class: 'muted' },
-          `${lists.length.toLocaleString('de-DE')} ${lists.length === 1 ? 'Liste' : 'Listen'}, ` +
-          `${Math.round(duels).toLocaleString('de-DE')} ${duels === 1 ? 'Duell' : 'Duelle'}`),
+          `${t('common.lists', { n: lists.length })}, ${t('common.duels', { n: Math.round(duels) })}`),
       ];
       if (lastError) lines.push(h('p', { class: 'set-error', role: 'alert' }, lastError));
       const persistLine = h('p', { class: 'muted set-storage-persist' });
@@ -111,9 +109,9 @@ export default {
       ]).then(([persisted, est]) => {
         if (!alive) return;
         const parts = [];
-        if (persisted === true) parts.push('Vom Browser dauerhaft geschützt.');
-        else if (persisted === false) parts.push('Der Browser kann die Daten bei Platzmangel löschen – exportiere ab und zu eine Sicherung.');
-        if (est && Number.isFinite(est.usage)) parts.push(`Belegt: ${fmtBytes(est.usage)}.`);
+        if (persisted === true) parts.push(t('settings.persisted'));
+        else if (persisted === false) parts.push(t('settings.notPersisted'));
+        if (est && Number.isFinite(est.usage)) parts.push(t('settings.used', { size: fmtBytes(est.usage) }));
         persistLine.textContent = parts.join(' ');
       }).catch(() => {});
     }
@@ -128,22 +126,21 @@ export default {
     const imgUsage = h('p', { class: 'muted', 'data-testid': 'set-images-usage' });
     function renderImages() {
       const { count, bytes } = images.usage();
-      const mb = (bytes / 1024 / 1024).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const mb = fmtNumber(bytes / 1024 / 1024, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
       const maxMb = Math.round(images.LIMITS.maxBytes / 1024 / 1024);
-      imgUsage.textContent = `Bildspeicher: ${count.toLocaleString('de-DE')} ${count === 1 ? 'Bild' : 'Bilder'}, ${mb} MB ` +
-        `(höchstens ${images.LIMITS.maxImages.toLocaleString('de-DE')} Bilder bzw. ${maxMb} MB).`;
+      imgUsage.textContent = t('settings.imgUsage', { n: count, mb, max: images.LIMITS.maxImages, maxMb });
     }
     renderImages();
     const unsubImages = images.subscribe(() => { if (alive) renderImages(); });
     const imagesSection = h('section', { class: 'card stack set-section', 'data-testid': 'set-images-section' },
-      h('h2', { class: 'set-heading' }, 'Bilder'),
-      h('label', { class: 'set-switch', for: 'set-images' }, imgToggle, h('span', null, 'Bilder aus Wikipedia anzeigen')),
-      h('p', { class: 'muted small' }, 'Die Begriffe deiner Listen werden dafür an Wikipedia gesendet.'),
+      h('h2', { class: 'set-heading' }, t('settings.images')),
+      h('label', { class: 'set-switch', for: 'set-images' }, imgToggle, h('span', null, t('settings.imagesShow'))),
+      h('p', { class: 'muted small' }, t('settings.imagesPrivacy')),
       imgUsage,
       h('button', {
         type: 'button', class: 'btn btn-block', 'data-testid': 'set-images-clear',
-        on: { click: async () => { await images.clear(); renderImages(); ui.toast('Bildspeicher geleert'); } },
-      }, 'Bildspeicher leeren'),
+        on: { click: async () => { await images.clear(); renderImages(); ui.toast(t('settings.imagesCleared')); } },
+      }, t('settings.imagesClear')),
     );
 
     /* ---------- Beschädigte Daten (nur sichtbar, wenn vorhanden) ---------- */
@@ -155,72 +152,89 @@ export default {
       if (!entries.length) { brokenSection.replaceChildren(); return; }
       const many = entries.length > 1;
       brokenSection.replaceChildren(
-        h('h2', { class: 'set-heading' }, 'Beschädigte Daten'),
-        h('p', { class: 'muted' },
-          'Beim Laden waren gespeicherte Daten beschädigt. Das Original wurde unverändert beiseitegelegt. ' +
-          'Du kannst es als Datei herunterladen und z. B. über „Sicherung importieren“ wiederherstellen.'),
+        h('h2', { class: 'set-heading' }, t('settings.broken')),
+        h('p', { class: 'muted' }, t('settings.brokenText')),
         ...entries.map((/** @type {{key:string, at:number, size:number}} */ e, i) => h('button', {
           type: 'button', class: 'btn btn-block', 'data-testid': 'set-broken-download', 'data-key': e.key,
           on: {
             click: () => {
               const raw = store.getBroken(e.key);
-              if (raw === null) { ui.toast('Die beschädigten Daten sind nicht mehr vorhanden'); renderBroken(); return; }
+              if (raw === null) { ui.toast(t('settings.brokenGone')); renderBroken(); return; }
               try {
                 downloadBroken(raw, e.at);
-                ui.toast('Beschädigte Daten heruntergeladen');
+                ui.toast(t('settings.brokenDownloaded'));
               } catch {
-                ui.toast('Download nicht möglich');
+                ui.toast(t('settings.downloadFailed'));
               }
             },
           },
         }, many
-          ? `Beschädigte Daten herunterladen (${e.at ? ui.fmtDate(e.at) : (i === 0 ? 'älteste' : `Nr. ${i + 1}`)})`
-          : 'Beschädigte Daten herunterladen')),
+          ? `${t('settings.brokenDownload')} (${e.at ? ui.fmtDate(e.at) : (i === 0 ? t('settings.oldest') : t('settings.numberN', { n: i + 1 }))})`
+          : t('settings.brokenDownload'))),
       );
     }
     renderBroken();
 
+    /* ---------- Sprache ---------- */
+    const langSetting = ['de', 'en'].includes(store.getSettings().lang) ? store.getSettings().lang : 'auto';
+    const langSelect = /** @type {HTMLSelectElement} */ (h('select', {
+      class: 'input set-lang', id: 'set-lang', 'data-testid': 'set-lang',
+      on: {
+        change: () => {
+          store.setSetting('lang', langSelect.value);
+          setLang(langSelect.value);
+          ctx.navigate(location.hash || '#/einstellungen', { replace: true }); // Ansicht in neuer Sprache
+        },
+      },
+    },
+      h('option', { value: 'auto', selected: langSetting === 'auto' }, t('settings.langAuto')),
+      h('option', { value: 'de', selected: langSetting === 'de', lang: 'de' }, 'Deutsch'),
+      h('option', { value: 'en', selected: langSetting === 'en', lang: 'en' }, 'English'),
+    ));
+
     /* ---------- Aufbau ---------- */
     root.replaceChildren(h('div', { class: 'set-view stack' },
       h('section', { class: 'card stack set-section' },
-        h('h2', { class: 'set-heading' }, 'Dein Name'),
+        h('h2', { class: 'set-heading' }, t('settings.name')),
         h('label', { class: 'field', for: 'set-name' },
-          h('span', { class: 'field-label' }, 'Wird beim Teilen deiner Rangliste angezeigt')),
+          h('span', { class: 'field-label' }, t('settings.nameHint'))),
         nameInput,
       ),
+      h('section', { class: 'card stack set-section', 'data-testid': 'set-lang-section' },
+        h('h2', { class: 'set-heading' }, h('label', { for: 'set-lang' }, t('settings.lang'))),
+        langSelect,
+      ),
       h('section', { class: 'card stack set-section' },
-        h('h2', { class: 'set-heading' }, 'Sicherung'),
-        h('p', { class: 'muted' },
-          'Speichere alle Listen, Wertungen und Partner-Ranglisten als Datei, z. B. vor einem Handywechsel.'),
+        h('h2', { class: 'set-heading' }, t('settings.backup')),
+        h('p', { class: 'muted' }, t('settings.backupText')),
         h('button', {
           type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'set-export',
           on: {
             click: () => {
               try {
                 downloadBackup(store.getState());
-                ui.toast(`Sicherung gespeichert: ${backupFileName()}`);
+                ui.toast(t('settings.exported', { file: backupFileName() }));
               } catch {
-                ui.toast('Sicherung konnte nicht erstellt werden');
+                ui.toast(t('settings.exportFailed'));
               }
             },
           },
-        }, 'Sicherung exportieren'),
+        }, t('settings.export')),
         h('button', {
           type: 'button', class: 'btn btn-block', 'data-testid': 'set-import',
           on: { click: () => { showError(null); fileInput.click(); } },
-        }, 'Sicherung importieren'),
-        h('p', { class: 'muted small' },
-          'Der Import ersetzt alle Listen auf diesem Gerät. Deine Geräte-Kennung bleibt erhalten.'),
+        }, t('settings.import')),
+        h('p', { class: 'muted small' }, t('settings.importHint')),
         importError,
         fileInput,
       ),
       imagesSection,
       h('section', { class: 'card stack set-section' },
-        h('h2', { class: 'set-heading' }, 'Speicher'),
+        h('h2', { class: 'set-heading' }, t('settings.storage')),
         storageBox,
       ),
       brokenSection,
-      h('p', { class: 'muted small set-version', 'data-testid': 'set-version' }, `Elo-Duell Version ${VERSION}`),
+      h('p', { class: 'muted small set-version', 'data-testid': 'set-version' }, t('settings.version', { v: VERSION })),
     ));
 
     const unsubscribe = store.subscribe(() => {

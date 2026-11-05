@@ -3,6 +3,7 @@ import { h, toast, fmtDate } from '../ui.js';
 import { decodeShare, toPartnerRanking, buildShareUrl, ShareError } from '../share/codec.js';
 import { normalizeName } from '../logic/text.js';
 import { progress } from '../logic/stability.js';
+import { t } from '../i18n.js';
 
 /** replaceChildren ohne null/false (natives replaceChildren würde „null“ schreiben). @param {Element} el @param {...any} kids */
 const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
@@ -19,16 +20,13 @@ function chromeIntent(url) {
   return `intent://${u.host}${u.pathname}${u.search}${u.hash}#Intent;scheme=${u.protocol.replace(':', '')};package=com.android.chrome;end`;
 }
 
-/** @param {number} n @param {string} one @param {string} many */
-const plural = (n, one, many) => `${n.toLocaleString('de-DE')} ${n === 1 ? one : many}`;
-
 export default {
-  title: 'Import',
+  title: () => t('import.title'),
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
     const { store, navigate, getPendingImport, clearPendingImport } = ctx;
     let alive = true;
-    const box = h('div', { class: 'stack import-view' }, h('p', { class: 'muted' }, 'Wird gelesen …'));
+    const box = h('div', { class: 'stack import-view' }, h('p', { class: 'muted' }, t('import.reading')));
     root.append(box);
 
     /** @param {string} text @param {Node|null} [extra] */
@@ -38,16 +36,16 @@ export default {
         extra,
         h('div', { class: 'stack' },
           h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'import-scan',
-            on: { click: () => navigate('#/scan') } }, 'QR scannen oder Link einfügen'),
+            on: { click: () => navigate('#/scan') } }, t('import.scanOrPaste')),
           h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'import-home',
-            on: { click: () => navigate('#/') } }, 'Zur Übersicht'),
+            on: { click: () => navigate('#/') } }, t('import.home')),
         ),
       );
     };
 
     const payload = getPendingImport();
     if (!payload) {
-      showError('Kein Link zum Importieren gefunden.');
+      showError(t('import.none'));
       return () => { alive = false; };
     }
 
@@ -58,24 +56,24 @@ export default {
       } catch (err) {
         if (!alive) return;
         clearPendingImport();
-        showError(err instanceof ShareError ? err.message : 'Der Link konnte nicht gelesen werden.');
+        showError(err instanceof ShareError ? err.message : t('import.unreadable'));
         return;
       }
       if (!alive) return;
       if (share.d === store.getDevice().id) {
         clearPendingImport();
-        showError('Das ist deine eigene Rangliste');
+        showError(t('import.own'));
         return;
       }
       draw(share);
     })().catch((err) => {
       console.error(err);
-      if (alive) showError('Der Link konnte nicht gelesen werden.');
+      if (alive) showError(t('import.unreadable'));
     });
 
     /** @param {import('../types.js').ShareData} share */
     function draw(share) {
-      const who = share.p || 'Unbekannt';
+      const who = share.p || t('import.unknown');
       const partnerDuels = share.o.reduce((s, o) => s + o[2], 0);
       const match = store.findMatch(share);
       const target = match.list;
@@ -104,20 +102,20 @@ export default {
           const own = list ? progress(list).level : 'start';
           // Toast nur „gespeichert“, wenn wirklich gespeichert (N2).
           const status = saved === null
-            ? `Rangliste von ${who} konnte nicht gespeichert werden`
-            : saved ? `Rangliste von ${who} gespeichert` : `Du hast schon einen neueren Stand von ${who}`;
+            ? t('import.saveFailed', { who })
+            : saved ? t('import.saved', { who }) : t('import.newer', { who });
           if (saved === null) {
             toast(status);
             navigate(`#/liste/${enc}`, { replace: true });
           } else if (own === 'start') {
-            toast(`${status} – duelliere jetzt selbst`);
+            toast(t('import.duelNow', { status }));
             navigate(`#/duell/${enc}`, { replace: true });
           } else {
             toast(status);
             navigate(`#/vergleich/${enc}/${encodeURIComponent(share.d)}`, { replace: true });
           }
         } else {
-          toast('Liste übernommen');
+          toast(t('import.listTaken'));
           navigate(`#/liste/${enc}`, { replace: true });
         }
       };
@@ -129,48 +127,49 @@ export default {
         finish(listId);
       };
       const asNew = () => {
-        const list = store.createList(share.n || `Liste von ${who}`, share.o.map((o) => o[0]), share.l);
+        const list = store.createList(share.n || t('import.listOf', { who }), share.o.map((o) => o[0]), share.l);
         finish(list.id);
       };
 
       /** @type {(Node|null)[]} */
       const actions = [];
       if (match.kind === 'id' && target) {
-        actions.push(h('p', { class: 'import-match' }, `Gehört zu deiner Liste „${target.name}“.`));
+        actions.push(h('p', { class: 'import-match' }, t('import.belongs', { name: target.name })));
         actions.push(h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'import-accept',
-          on: { click: () => intoExisting(target.id, false) } }, 'Übernehmen'));
+          on: { click: () => intoExisting(target.id, false) } }, t('import.accept')));
       } else if (match.kind === 'name' && target) {
-        actions.push(h('p', { class: 'import-match' }, `Sieht aus wie deine Liste „${target.name}“.`));
+        actions.push(h('p', { class: 'import-match' }, t('import.looksLike', { name: target.name })));
         actions.push(h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': `import-link-${target.id}`,
-          on: { click: () => intoExisting(target.id, true) } }, `Mit Liste „${target.name}“ verknüpfen`));
+          on: { click: () => intoExisting(target.id, true) } }, t('import.link', { name: target.name })));
         actions.push(h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'import-new',
-          on: { click: asNew } }, 'Als neue Liste'));
+          on: { click: asNew } }, t('import.asNew')));
       } else {
         actions.push(h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'import-new',
-          on: { click: asNew } }, 'Als neue Liste übernehmen'));
+          on: { click: asNew } }, t('import.asNewTake')));
       }
 
       const sharedUrl = buildShareUrl(payload || '', location);
       fill(box, 
         isInAppBrowser()
           ? h('section', { class: 'card stack import-webview', 'data-testid': 'import-webview' },
-            h('p', {}, 'Du bist in einem In-App-Browser. Was du hier übernimmst, landet nicht in deiner Elo-Duell-App. Öffne den Link besser in Chrome (Menü ⋮ → „In Chrome öffnen“).'),
-            h('a', { class: 'btn btn-block', href: chromeIntent(sharedUrl) }, 'In Chrome öffnen'))
+            h('p', {}, t('import.webview')),
+            h('a', { class: 'btn btn-block', href: chromeIntent(sharedUrl) }, t('import.openChrome')))
           : null,
         h('section', { class: 'card stack import-card' },
           h('h2', { class: 'import-summary', 'data-testid': 'import-summary' },
-            `${partnerDuels > 0 ? 'Rangliste' : 'Liste'} von ${who}: ${share.n} (${plural(share.o.length, 'Option', 'Optionen')})`),
+            t(partnerDuels > 0 ? 'import.summaryRanking' : 'import.summaryList',
+              { who, name: share.n, options: t('common.options', { n: share.o.length }) })),
           h('p', { class: 'muted' }, partnerDuels > 0
-            ? `${plural(partnerDuels / 2, 'Duell', 'Duelle')} · Stand ${fmtDate(share.t * 1000)}`
-            : `Noch ohne Duelle · Stand ${fmtDate(share.t * 1000)}`),
+            ? `${t('common.duels', { n: partnerDuels / 2 })} · ${t('list.asOf', { date: fmtDate(share.t * 1000) })}`
+            : `${t('import.noDuels')} · ${t('list.asOf', { date: fmtDate(share.t * 1000) })}`),
         ),
         missing.length
           ? h('label', { class: 'card import-add' }, addBox,
-            h('span', {}, `${plural(missing.length, 'neue Option', 'neue Optionen')} von ${who} übernehmen`))
+            h('span', {}, t('import.addMissing', { n: missing.length, who })))
           : null,
         h('div', { class: 'stack import-actions' }, ...actions,
           h('button', { type: 'button', class: 'btn btn-ghost btn-block', 'data-testid': 'import-cancel',
-            on: { click: () => { clearPendingImport(); navigate('#/'); } } }, 'Abbrechen')),
+            on: { click: () => { clearPendingImport(); navigate('#/'); } } }, t('common.cancel'))),
       );
     }
 

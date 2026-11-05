@@ -31,7 +31,7 @@ export default defineConfig({
     launchOptions,
   },
   projects: [
-    { name: 'pixel7', use: { ...devices['Pixel 7'], launchOptions } },
+    { name: 'pixel7', use: { ...devices['Pixel 7'], locale: 'de-DE', launchOptions } },
   ],
   webServer: {
     command: 'node tools/serve.mjs',

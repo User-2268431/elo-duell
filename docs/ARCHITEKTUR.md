@@ -43,6 +43,7 @@ js/views/settings.js                                               B
 js/views/share.js  scan.js  import.js  compare.js                  D
 js/pwa.js  js/version.js                                           E
 js/images.js               Bilder aus Wikipedia (v1.0.2): Cache `elo-duell-img`, Metadaten `elo-duell:img`, LRU-Grenzen
+js/i18n.js  js/i18n/de.js  en.js  Sprache (v1.0.3): t(key, params), getLang/setLang, settings.lang auto|de|en, de-DE/en-GB
 vendor/qrcode-generator.mjs + LICENSE-qrcode-generator (MIT)        D
 vendor/jsQR.js (min) + LICENSE-jsQR (Apache-2.0)                    D
 vendor/package.json        E  {"type":"commonjs"}, damit Node-Tests jsQR per createRequire laden können

@@ -62,6 +62,9 @@ export function initPwa(opts) {
 /** Fallback, falls kein Callback übergeben wird: Banner über ui.setBanner. @param {()=>void} apply */
 function fallbackBanner(apply) {
   import('./ui.js')
-    .then((ui) => ui.setBanner('update', 'Neue Version verfügbar', { label: 'Neu laden', onClick: apply }))
+    .then(async (ui) => {
+      const { t } = await import('./i18n.js');
+      ui.setBanner('update', t('pwa.update'), { label: t('pwa.reload'), onClick: apply });
+    })
     .catch((e) => console.error(e));
 }

@@ -1,4 +1,5 @@
 // Eigentümer: C – DOM-Helfer, Toast, Dialoge, Banner, Formatierung (docs/ARCHITEKTUR.md §4C).
+import { t, fmtNumber, fmtDateTime } from './i18n.js';
 
 /** Attribute, die als DOM-Eigenschaft gesetzt werden (nicht als HTML-Attribut). */
 const PROPS = new Set(['value', 'checked', 'selected', 'indeterminate']);
@@ -123,7 +124,7 @@ function openDialog(o) {
  * @param {{title:string, text?:string, okLabel?:string, cancelLabel?:string, danger?:boolean}} o
  * @returns {Promise<boolean>}
  */
-export function confirmDialog({ title, text, okLabel = 'OK', cancelLabel = 'Abbrechen', danger = false }) {
+export function confirmDialog({ title, text, okLabel = t('common.ok'), cancelLabel = t('common.cancel'), danger = false }) {
   return openDialog({
     title, okLabel, cancelLabel, danger,
     body: text ? [h('p', { class: 'dlg-text' }, text)] : [],
@@ -135,7 +136,7 @@ export function confirmDialog({ title, text, okLabel = 'OK', cancelLabel = 'Abbr
  * @param {{title:string, label?:string, value?:string, okLabel?:string}} o
  * @returns {Promise<string|null>}
  */
-export function promptDialog({ title, label, value = '', okLabel = 'Speichern' }) {
+export function promptDialog({ title, label, value = '', okLabel = t('common.save') }) {
   const input = /** @type {HTMLInputElement} */ (h('input', {
     type: 'text', class: 'input', 'data-testid': 'dialog-input', value, autocomplete: 'off',
     enterkeyhint: 'done', 'aria-label': label || title,
@@ -144,7 +145,7 @@ export function promptDialog({ title, label, value = '', okLabel = 'Speichern' }
     ? [h('label', { class: 'field' }, h('span', { class: 'field-label' }, label), input)]
     : [input];
   const p = openDialog({
-    title, okLabel, cancelLabel: 'Abbrechen', body,
+    title, okLabel, cancelLabel: t('common.cancel'), body,
     onOk: () => input.value, cancelValue: /** @type {string|null} */ (null), focus: input,
   });
   input.select();
@@ -153,17 +154,15 @@ export function promptDialog({ title, label, value = '', okLabel = 'Speichern' }
 
 /* ---------------- Formatierung ---------------- */
 
-/** @param {number} n @returns {string} ganzzahlig, de-DE */
+/** @param {number} n @returns {string} ganzzahlig, in der UI-Sprache (de-DE / en-GB) */
 export function fmtRating(n) {
   const v = Math.round(Number(n));
-  return (Number.isFinite(v) ? v : 0).toLocaleString('de-DE');
+  return fmtNumber(Number.isFinite(v) ? v : 0);
 }
 
-/** @param {number} ms @returns {string} z. B. „04.11.2026, 22:35“ */
+/** @param {number} ms @returns {string} z. B. „04.11.2026, 22:35“ (de) / „04/11/2026, 22:35“ (en) */
 export function fmtDate(ms) {
-  const d = new Date(ms);
-  if (Number.isNaN(d.getTime())) return '–';
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return fmtDateTime(ms);
 }
 
 /* ---------------- Banner ---------------- */

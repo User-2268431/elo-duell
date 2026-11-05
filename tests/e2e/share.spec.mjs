@@ -10,7 +10,7 @@ const PIZZA = ['Margherita', 'Funghi', 'Diavola', 'Quattro Formaggi', 'Calzone',
 /** Neues „Handy“ = eigener Browser-Kontext (eigenes Profil, eigener Speicher). @param {import('playwright/test').Browser} browser */
 async function phone(browser, /** @type {(() => void)|null} */ initScript = null) {
   const { defaultBrowserType, ...pixel } = devices['Pixel 7'];
-  const context = await browser.newContext({ ...pixel, baseURL: BASE });
+  const context = await browser.newContext({ ...pixel, locale: 'de-DE', baseURL: BASE });
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:4173' });
   if (initScript) await context.addInitScript(initScript);
   const page = await context.newPage();
@@ -191,7 +191,7 @@ test('Kamera-Scan (Fake-Kamera, jsQR-Fallback) und Kamera stoppt beim Abbrechen'
   });
   try {
     const { defaultBrowserType, ...pixel } = devices['Pixel 7'];
-    const context = await browser.newContext({ ...pixel, baseURL: BASE });
+    const context = await browser.newContext({ ...pixel, locale: 'de-DE', baseURL: BASE });
     await context.grantPermissions(['camera'], { origin: 'http://localhost:4173' });
     const page = await context.newPage();
     await page.goto('./#/scan');

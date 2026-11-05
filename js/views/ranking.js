@@ -3,9 +3,10 @@ import { h, icon, fmtRating } from '../ui.js';
 import { rankOptions } from '../logic/elo.js';
 import { progress } from '../logic/stability.js';
 import { images, loadImagesForList } from '../images.js';
+import { t, fmtNumber } from '../i18n.js';
 
 export default {
-  title: 'Rangliste',
+  title: () => t('common.ranking'),
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
     const { store, navigate } = ctx;
@@ -32,36 +33,36 @@ export default {
         class: ['rank-row', o.isNew && 'rank-row-new', !o.isNew && o.rank <= 3 && `rank-top rank-top-${o.rank}`],
         'data-testid': `rank-row-${o.rank}`,
       },
-        h('span', { class: 'rank-place', 'aria-label': o.isNew ? 'noch kein Platz' : `Platz ${o.rank}` },
+        h('span', { class: 'rank-place', 'aria-label': o.isNew ? t('rank.noPlace') : t('rank.placeN', { n: o.rank }) },
           o.isNew ? '–' : `${o.rank}.`),
         h('span', { class: 'rank-name-cell' },
           rankImg(o.name),
           h('span', { class: 'rank-name-text' },
             h('span', { class: 'rank-name', 'data-testid': 'rank-name' }, o.name),
-            o.isNew ? h('span', { class: 'badge rank-badge-new', 'data-testid': 'rank-new' }, 'neu') : null,
+            o.isNew ? h('span', { class: 'badge rank-badge-new', 'data-testid': 'rank-new' }, t('rank.new')) : null,
           ),
         ),
         h('span', { class: 'rank-rating', 'data-testid': 'rank-rating' }, fmtRating(o.rating)),
-        h('span', { class: 'rank-duels', 'data-testid': 'rank-duels' }, o.duels.toLocaleString('de-DE')),
+        h('span', { class: 'rank-duels', 'data-testid': 'rank-duels' }, fmtNumber(o.duels)),
       ));
 
       box.replaceChildren(
         hint,
         ranked.length
-          ? h('section', { class: 'card rank-table', 'aria-label': 'Rangliste' },
+          ? h('section', { class: 'card rank-table', 'aria-label': t('common.ranking') },
             h('div', { class: 'rank-head', 'aria-hidden': 'true' },
-              h('span', { class: 'rank-place' }, 'Platz'),
-              h('span', null, 'Name'),
-              h('span', { class: 'rank-rating' }, 'Punkte'),
-              h('span', { class: 'rank-duels' }, 'Duelle'),
+              h('span', { class: 'rank-place' }, t('rank.place')),
+              h('span', null, t('rank.name')),
+              h('span', { class: 'rank-rating' }, t('rank.points')),
+              h('span', { class: 'rank-duels' }, t('rank.duels')),
             ),
             h('ol', { class: 'rank-list' }, ...rows))
-          : h('p', { class: 'card empty' }, 'Diese Liste hat noch keine Optionen.'),
+          : h('p', { class: 'card empty' }, t('rank.empty')),
         h('div', { class: 'bottom-bar' },
           h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'rank-share',
-            on: { click: () => navigate(`#/teilen/${enc}`) } }, icon('share'), 'Teilen'),
+            on: { click: () => navigate(`#/teilen/${enc}`) } }, icon('share'), t('common.share')),
           h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'rank-duel',
-            on: { click: () => navigate(`#/duell/${enc}`) } }, icon('play'), 'Weiter duellieren'),
+            on: { click: () => navigate(`#/duell/${enc}`) } }, icon('play'), t('common.keepDueling')),
         ),
       );
     }

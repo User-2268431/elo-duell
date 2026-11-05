@@ -1,5 +1,6 @@
 // Eigentümer: C – Hash-Router (docs/ARCHITEKTUR.md §4C, §6).
 import { toast } from './ui.js';
+import { t } from './i18n.js';
 
 /** @typedef {{title:string|((ctx:any)=>string), render(root:HTMLElement, ctx:any): void|(()=>void)}} View */
 /** @typedef {{pattern:string, view:View, parent?:(p:Record<string,string>)=>string}} Route */
@@ -54,7 +55,7 @@ function setPending(payload) {
 }
 
 function goHomeNotFound() {
-  toast('Liste nicht gefunden');
+  toast(t('common.listNotFound'));
   history.replaceState(null, '', '#/');
   render();
 }
@@ -90,6 +91,7 @@ function render() {
   if (back) {
     const parent = m.route.parent;
     back.hidden = !parent;
+    back.setAttribute('aria-label', t('common.back'));
     back.onclick = parent ? () => navigate(parent(m.params)) : null;
   }
   document.getElementById('bar-actions')?.replaceChildren(); // Views dürfen hier Kopfzeilen-Buttons ablegen
@@ -102,7 +104,7 @@ function render() {
     root.replaceChildren();
     const p = document.createElement('p');
     p.className = 'card';
-    p.textContent = 'Diese Ansicht konnte nicht geladen werden.';
+    p.textContent = t('common.viewFailed');
     root.append(p);
   }
 }

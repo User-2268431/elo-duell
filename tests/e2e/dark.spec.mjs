@@ -24,7 +24,7 @@ function luminance(css) {
 test('Dunkelmodus: alle Hauptansichten rendern dunkel und ohne Fehler', async ({ browser }) => {
   mkdirSync(SHOTS, { recursive: true });
   const { defaultBrowserType, ...pixel } = devices['Pixel 7'];
-  const context = await browser.newContext({ ...pixel, baseURL: BASE, colorScheme: 'dark' });
+  const context = await browser.newContext({ ...pixel, locale: 'de-DE', baseURL: BASE, colorScheme: 'dark' });
   const page = await context.newPage();
   /** @type {string[]} */ const errors = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e}`));

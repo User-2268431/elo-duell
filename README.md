@@ -4,7 +4,9 @@ Elo-Duell hilft dir, aus einer Liste von Möglichkeiten (Urlaubsziele, Restauran
 
 **Zur App:** https://user-2268431.github.io/elo-duell/
 
-**Ausführliche Anleitung:** [ANLEITUNG.md](ANLEITUNG.md)
+**Ausführliche Anleitung:** [ANLEITUNG.md](ANLEITUNG.md) · English quick guide: [docs/GUIDE.en.md](docs/GUIDE.en.md)
+
+**Sprache:** Deutsch/Englisch, automatisch nach Handy-Sprache, umschaltbar in den Einstellungen.
 
 ## Installation auf Android in drei Schritten
 
@@ -39,7 +41,7 @@ Der Balken zeigt, wie weit du bist, darunter steht, wie viele Duelle ungefähr n
 Unter **„Rangliste“** siehst du Platz, Name, Punkte und die Zahl der Duelle. Alle Optionen starten bei 1.000 Punkten. Optionen ohne Duell stehen am Ende mit dem Hinweis „neu“.
 
 ### Bilder
-Zu den Optionen lädt die App passende Fotos aus Wikipedia (de, sonst en) und zeigt sie in Duell und Rangliste. Dafür werden die Begriffe an Wikipedia gesendet; abschaltbar in den Einstellungen. Bildspeicher höchstens 300 Bilder/20 MB, offline nur bereits geladene Bilder. Details: [ANLEITUNG.md](ANLEITUNG.md#bilder).
+Zu den Optionen lädt die App passende Fotos aus Wikipedia (zuerst in der App-Sprache, dann die andere) und zeigt sie in Duell und Rangliste. Dafür werden die Begriffe an Wikipedia gesendet; abschaltbar in den Einstellungen. Bildspeicher höchstens 300 Bilder/20 MB, offline nur bereits geladene Bilder. Details: [ANLEITUNG.md](ANLEITUNG.md#bilder).
 
 ## Zu zweit entscheiden
 

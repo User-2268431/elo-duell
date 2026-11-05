@@ -21,7 +21,7 @@ function loadJsQr() {
       s.src = new URL('../../vendor/jsQR.js', import.meta.url).href;
       s.async = true;
       s.onload = () => (w.jsQR ? resolve(w.jsQR) : reject(new Error('jsQR fehlt')));
-      s.onerror = () => { jsQrPromise = null; reject(new Error('jsQR konnte nicht geladen werden')); };
+      s.onerror = () => { jsQrPromise = null; reject(new Error('jsQR could not be loaded')); };
       document.head.appendChild(s);
     });
   }

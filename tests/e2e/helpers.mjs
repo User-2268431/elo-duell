@@ -102,6 +102,7 @@ export async function launchPersistent(extra = {}) {
   const exe = '/opt/pw-browsers/chromium';
   const context = await chromium.launchPersistentContext(dir, {
     ...pixel,
+    locale: 'de-DE',
     baseURL: BASE_URL,
     ...(!process.env.PLAYWRIGHT_BROWSERS_PATH && fsExists(exe) ? { executablePath: exe } : {}),
     args: BLOCK_WIKI_ARGS,

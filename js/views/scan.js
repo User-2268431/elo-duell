@@ -2,26 +2,27 @@
 import { h } from '../ui.js';
 import { canScan, scanQr } from '../share/scanner.js';
 import { extractPayload } from '../share/codec.js';
+import { t } from '../i18n.js';
 
 /** @param {any} err @returns {string} */
 function cameraMessage(err) {
   switch (err?.name) {
     case 'NotAllowedError':
     case 'SecurityError':
-      return 'Kein Zugriff auf die Kamera. Erlaube die Kamera in den Browser-Einstellungen oder füge den Link unten ein.';
+      return t('scan.denied');
     case 'NotFoundError':
     case 'OverconstrainedError':
-      return 'Keine Kamera gefunden. Füge den Link unten ein.';
+      return t('scan.noCamera');
     case 'NotReadableError':
     case 'AbortError':
-      return 'Die Kamera wird gerade von einer anderen App benutzt. Füge den Link unten ein.';
+      return t('scan.busy');
     default:
-      return 'Die Kamera konnte nicht gestartet werden. Füge den Link unten ein.';
+      return t('scan.failed');
   }
 }
 
 export default {
-  title: 'QR scannen',
+  title: () => t('scan.title'),
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
     const { navigate, openImport } = ctx;
@@ -31,7 +32,7 @@ export default {
 
     const video = /** @type {HTMLVideoElement} */ (h('video', {
       class: 'scan-video', 'data-testid': 'scan-video', playsinline: true, muted: true, autoplay: true,
-      'aria-label': 'Kamerabild',
+      'aria-label': t('scan.videoAria'),
     }));
     video.muted = true;
     const status = h('p', { class: 'scan-status muted', 'aria-live': 'polite' });
@@ -52,8 +53,8 @@ export default {
       stopCamera();
       ctrl = new AbortController();
       const myCtrl = ctrl;
-      status.textContent = 'Kamera wird gestartet …';
-      const shown = setTimeout(() => { if (alive && ctrl === myCtrl) status.textContent = 'Halte die Kamera auf den QR-Code der anderen Person.'; }, 1200);
+      status.textContent = t('scan.starting');
+      const shown = setTimeout(() => { if (alive && ctrl === myCtrl) status.textContent = t('scan.aim'); }, 1200);
       scanQr(video, { signal: myCtrl.signal }).then((text) => {
         clearTimeout(shown);
         if (!alive || ctrl !== myCtrl) return;
@@ -63,7 +64,7 @@ export default {
           openImport(payload);
           return;
         }
-        showError('Das ist kein Elo-Duell-Code. Scanne den QR-Code aus „Teilen“.');
+        showError(t('scan.notOurs'));
         status.textContent = '';
         retryTimer = setTimeout(start, 1500);
       }, (err) => {
@@ -82,7 +83,7 @@ export default {
     const applyPaste = () => {
       const payload = extractPayload(paste.value);
       if (!payload) {
-        showError('Das ist kein gültiger Elo-Duell-Link. Kopiere den ganzen Link aus der Nachricht.');
+        showError(t('scan.badLink'));
         paste.focus();
         return;
       }
@@ -99,14 +100,14 @@ export default {
       frame,
       status,
       error,
-      h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'scan-cancel', on: { click: () => { stopCamera(); navigate('#/'); } } }, 'Abbrechen'),
+      h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'scan-cancel', on: { click: () => { stopCamera(); navigate('#/'); } } }, t('common.cancel')),
       h('section', { class: 'card stack scan-paste-box' },
         h('label', { class: 'field' },
-          h('span', { class: 'field-label' }, 'Link einfügen'),
-          h('span', { class: 'field-hint' }, 'Hast du den Link per Nachricht bekommen? Hier einfügen.'),
+          h('span', { class: 'field-label' }, t('scan.paste')),
+          h('span', { class: 'field-hint' }, t('scan.pasteHint')),
           paste,
         ),
-        h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'scan-paste-ok', on: { click: applyPaste } }, 'Übernehmen'),
+        h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'scan-paste-ok', on: { click: applyPaste } }, t('import.accept')),
       ),
     ));
 
@@ -114,7 +115,7 @@ export default {
       start();
     } else {
       frame.hidden = true;
-      showError('Die Kamera ist hier nicht verfügbar. Füge den Link unten ein.');
+      showError(t('scan.unavailable'));
     }
 
     return () => {

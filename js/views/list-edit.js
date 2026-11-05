@@ -1,11 +1,7 @@
 // Eigentümer: C – View list-edit (docs/ARCHITEKTUR.md §6, §7). #/neu und #/liste/:id/bearbeiten
 import { h, icon, toast, confirmDialog, promptDialog } from '../ui.js';
 import { parseOptionLines, normalizeName } from '../logic/text.js';
-
-/** @param {number} n @param {string} one @param {string} many */
-function plural(n, one, many) {
-  return `${n.toLocaleString('de-DE')} ${n === 1 ? one : many}`;
-}
+import { t } from '../i18n.js';
 
 /** @param {string} text */
 function safeParse(text) {
@@ -19,11 +15,11 @@ function norm(s) {
 
 /** Untergrenze für Optionen je Liste (DECISIONS F10 = B). */
 const MIN_OPTIONS = 2;
-const MSG_MIN = 'Mindestens 2 Optionen nötig';
+const msgMin = () => t('edit.min', { n: MIN_OPTIONS });
 
 export default {
   /** @param {any} ctx */
-  title: (ctx) => (ctx.params.id ? 'Liste bearbeiten' : 'Neue Liste'),
+  title: (ctx) => (ctx.params.id ? t('common.editList') : t('common.newList')),
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
     const { store, navigate } = ctx;
@@ -33,13 +29,13 @@ export default {
 
     const nameInput = /** @type {HTMLInputElement} */ (h('input', {
       type: 'text', class: 'input', id: 'edit-name', 'data-testid': 'edit-name', maxlength: 120,
-      autocomplete: 'off', enterkeyhint: 'next', placeholder: 'z. B. Urlaubsziele',
+      autocomplete: 'off', enterkeyhint: 'next', placeholder: t('edit.namePh'),
       value: initial ? initial.name : '',
     }));
     const optsInput = /** @type {HTMLTextAreaElement} */ (h('textarea', {
       class: 'textarea', id: 'edit-options', 'data-testid': 'edit-options', rows: isEdit ? 4 : 8,
       autocapitalize: 'sentences',
-      placeholder: isEdit ? 'Neue Option\nNoch eine' : 'Lissabon\nRom\nKreta\n…',
+      placeholder: isEdit ? t('edit.optsPhEdit') : t('edit.optsPh'),
     }));
     const count = h('p', { class: 'field-hint lists-count', 'data-testid': 'edit-count', 'aria-live': 'polite' });
 
@@ -62,26 +58,26 @@ export default {
       const n = newNames().length;
       const tooFew = totalAfterSave() < MIN_OPTIONS;
       if (isEdit) {
-        count.textContent = n ? `${plural(n, 'neue Option', 'neue Optionen')} erkannt` : 'Keine neuen Optionen';
+        count.textContent = n ? t('edit.countNew', { n }) : t('edit.noNew');
       } else {
-        count.textContent = `${plural(n, 'Option', 'Optionen')} erkannt`;
+        count.textContent = t('edit.count', { n });
       }
-      if (tooFew) count.textContent += ` – ${MSG_MIN}`;
+      if (tooFew) count.textContent += ` – ${msgMin()}`;
       count.classList.toggle('lists-count-warn', tooFew && (isEdit || optsInput.value.trim() !== ''));
       saveBtn.disabled = tooFew;
-      saveBtn.title = tooFew ? MSG_MIN : '';
+      saveBtn.title = tooFew ? msgMin() : '';
     }
 
     function save() {
       const name = nameInput.value.trim();
       if (!name) {
-        toast('Bitte gib der Liste einen Namen');
+        toast(t('edit.needName'));
         nameInput.focus();
         return;
       }
       const names = newNames();
       if (totalAfterSave() < MIN_OPTIONS) {
-        toast(MSG_MIN);
+        toast(msgMin());
         optsInput.focus();
         return;
       }
@@ -94,7 +90,7 @@ export default {
       if (!list) { navigate('#/', { replace: true }); return; }
       if (name !== list.name) store.renameList(listId, name);
       const added = names.length ? store.addOptions(listId, names) : 0;
-      toast(added ? `Gespeichert – ${plural(added, 'neue Option', 'neue Optionen')}` : 'Gespeichert');
+      toast(added ? t('edit.savedNew', { n: added }) : t('common.saved'));
       navigate(`#/liste/${encodeURIComponent(listId)}`);
     }
 
@@ -103,36 +99,36 @@ export default {
       on: { submit: (/** @type {Event} */ e) => { e.preventDefault(); save(); } },
     },
       h('label', { class: 'field', for: 'edit-name' },
-        h('span', { class: 'field-label' }, 'Name der Liste'), nameInput),
+        h('span', { class: 'field-label' }, t('edit.name')), nameInput),
       h('div', { class: 'field' },
         h('label', { class: 'field-label', for: 'edit-options' },
-          isEdit ? 'Optionen hinzufügen (eine pro Zeile)' : 'Eine Option pro Zeile (Einfügen möglich)'),
+          isEdit ? t('edit.optsLabelEdit') : t('edit.optsLabel')),
         optsInput, count),
     );
 
     /* ---------- Bestehende Optionen (nur Bearbeiten) ---------- */
-    const optBox = h('ul', { class: 'lists-opts', 'aria-label': 'Optionen' });
+    const optBox = h('ul', { class: 'lists-opts', 'aria-label': t('edit.options') });
     const optHead = h('h2', { class: 'lists-section-title' });
     const optMin = h('p', { class: 'field-hint', 'data-testid': 'edit-opt-min', hidden: true },
-      `${MSG_MIN} – füge erst eine weitere hinzu, bevor du eine löschst. Die ganze Liste entfernst du mit „Liste löschen“.`);
+      t('edit.minLocked', { min: msgMin() }));
 
     function drawOptions() {
       const list = store.getList(listId);
       if (!list) return;
-      optHead.textContent = `Optionen (${list.options.length.toLocaleString('de-DE')})`;
+      optHead.textContent = t('edit.optionsN', { n: list.options.length });
       const locked = list.options.length <= MIN_OPTIONS;
       optMin.hidden = !locked;
       if (!list.options.length) {
-        optBox.replaceChildren(h('li', { class: 'lists-opt-empty muted' }, 'Noch keine Optionen.'));
+        optBox.replaceChildren(h('li', { class: 'lists-opt-empty muted' }, t('edit.noOptions')));
         return;
       }
       optBox.replaceChildren(...list.options.map((/** @type {any} */ o) => h('li', { class: 'lists-opt', 'data-testid': `edit-opt-${o.id}` },
         h('span', { class: 'lists-opt-name' }, o.name),
-        h('span', { class: 'lists-opt-duels muted' }, plural(o.duels, 'Duell', 'Duelle')),
+        h('span', { class: 'lists-opt-duels muted' }, t('common.duels', { n: o.duels })),
         h('button', { type: 'button', class: 'btn btn-ghost btn-icon', 'data-testid': `edit-opt-rename-${o.id}`,
-          'aria-label': `${o.name} umbenennen`, on: { click: () => renameOpt(o.id) } }, icon('pencil', 20)),
+          'aria-label': t('edit.renameAria', { name: o.name }), on: { click: () => renameOpt(o.id) } }, icon('pencil', 20)),
         h('button', { type: 'button', class: 'btn btn-ghost btn-icon lists-opt-remove', 'data-testid': `edit-opt-remove-${o.id}`,
-          'aria-label': `${o.name} löschen`, disabled: locked, title: locked ? MSG_MIN : null,
+          'aria-label': t('edit.deleteAria', { name: o.name }), disabled: locked, title: locked ? msgMin() : null,
           on: { click: () => removeOpt(o.id) } }, icon('trash', 20)),
       )));
     }
@@ -141,12 +137,12 @@ export default {
     async function renameOpt(optId) {
       const opt = store.getList(listId)?.options.find((/** @type {any} */ o) => o.id === optId);
       if (!opt) return;
-      const value = await promptDialog({ title: 'Option umbenennen', label: 'Neuer Name', value: opt.name });
+      const value = await promptDialog({ title: t('edit.renameTitle'), label: t('edit.newName'), value: opt.name });
       if (value === null) return;
       const name = value.trim();
       if (name === opt.name) return;
-      if (!name) { toast('Der Name darf nicht leer sein'); return; }
-      if (!store.renameOption(listId, optId, name)) { toast('Gibt es schon'); return; }
+      if (!name) { toast(t('edit.nameEmpty')); return; }
+      if (!store.renameOption(listId, optId, name)) { toast(t('edit.exists')); return; }
       drawOptions();
       updateCount();
     }
@@ -156,31 +152,31 @@ export default {
       const list = store.getList(listId);
       const opt = list?.options.find((/** @type {any} */ o) => o.id === optId);
       if (!list || !opt) return;
-      if (list.options.length <= MIN_OPTIONS) { toast(MSG_MIN); return; }
+      if (list.options.length <= MIN_OPTIONS) { toast(msgMin()); return; }
       if (opt.duels > 0) {
         const ok = await confirmDialog({
-          title: `„${opt.name}“ löschen?`,
-          text: `Die Option war schon in ${plural(opt.duels, 'Duell', 'Duellen')}. Diese Duelle werden ebenfalls entfernt.`,
-          okLabel: 'Löschen', danger: true,
+          title: t('edit.deleteTitle', { name: opt.name }),
+          text: t('edit.deleteOptText', { n: opt.duels }),
+          okLabel: t('common.delete'), danger: true,
         });
         if (!ok) return;
       }
-      if ((store.getList(listId)?.options.length ?? 0) <= MIN_OPTIONS) { toast(MSG_MIN); drawOptions(); return; }
+      if ((store.getList(listId)?.options.length ?? 0) <= MIN_OPTIONS) { toast(msgMin()); drawOptions(); return; }
       store.removeOption(listId, optId);
-      toast(`„${opt.name}“ gelöscht`);
+      toast(t('edit.deleted', { name: opt.name }));
       drawOptions();
       updateCount();
     }
 
     async function resetAll() {
       const ok = await confirmDialog({
-        title: 'Wertungen zurücksetzen?',
-        text: 'Alle Optionen starten wieder bei 1.000 Punkten, alle Duelle dieser Liste werden gelöscht. Die Optionen bleiben erhalten.',
-        okLabel: 'Zurücksetzen', danger: true,
+        title: t('edit.resetTitle'),
+        text: t('edit.resetText', { r: 1000 }),
+        okLabel: t('edit.resetOk'), danger: true,
       });
       if (!ok) return;
       store.resetRatings(listId);
-      toast('Wertungen zurückgesetzt');
+      toast(t('edit.resetDone'));
       drawOptions();
     }
 
@@ -188,18 +184,18 @@ export default {
       const list = store.getList(listId);
       if (!list) return;
       const ok = await confirmDialog({
-        title: `„${list.name}“ löschen?`,
-        text: 'Die Liste mit allen Optionen, Duellen und empfangenen Ranglisten wird von diesem Gerät gelöscht.',
-        okLabel: 'Liste löschen', danger: true,
+        title: t('edit.deleteTitle', { name: list.name }),
+        text: t('edit.deleteListText'),
+        okLabel: t('edit.deleteList'), danger: true,
       });
       if (!ok) return;
       store.deleteList(listId);
-      toast('Liste gelöscht');
+      toast(t('edit.listDeleted'));
       navigate('#/', { replace: true });
     }
 
     const saveBtn = h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'edit-save',
-      on: { click: save } }, isEdit ? 'Speichern' : 'Liste anlegen');
+      on: { click: save } }, isEdit ? t('common.save') : t('edit.create'));
     optsInput.addEventListener('input', updateCount);
     updateCount();
 
@@ -209,9 +205,9 @@ export default {
         h('section', { class: 'stack lists-section' }, optHead, optMin, optBox),
         h('section', { class: 'stack lists-section lists-danger-zone' },
           h('button', { type: 'button', class: 'btn btn-block', 'data-testid': 'edit-reset', on: { click: resetAll } },
-            'Wertungen zurücksetzen'),
+            t('edit.reset')),
           h('button', { type: 'button', class: 'btn btn-outline-danger btn-block', 'data-testid': 'edit-delete-list',
-            on: { click: deleteAll } }, icon('trash', 20), 'Liste löschen'),
+            on: { click: deleteAll } }, icon('trash', 20), t('edit.deleteList')),
         ),
       );
       drawOptions();

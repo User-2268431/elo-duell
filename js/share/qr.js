@@ -1,5 +1,6 @@
 // Eigentümer: D – QR-Erzeugung (docs/ARCHITEKTUR.md §4D, §5). Immer ECC L.
 import qrcode from '../../vendor/qrcode-generator.mjs';
+import { t } from '../i18n.js';
 
 export const QR_MAX_URL = 1000, LINK_WARN_URL = 2000;
 const QUIET = 4;          // Ruhezone in Modulen
@@ -24,7 +25,7 @@ export function renderQr(text, container, opts = {}) {
   canvas.width = size;
   canvas.height = size;
   canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', 'QR-Code mit dem Link zur Rangliste');
+  canvas.setAttribute('aria-label', t('share.qrAria'));
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, size, size);

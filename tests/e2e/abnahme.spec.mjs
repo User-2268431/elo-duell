@@ -21,7 +21,7 @@ const collator = new Intl.Collator('de');
 /** Neues „Handy“ = eigener Browser-Kontext. @param {import('playwright/test').Browser} browser */
 async function phone(browser) {
   const { defaultBrowserType, ...pixel } = devices['Pixel 7'];
-  const context = await browser.newContext({ ...pixel, baseURL: BASE });
+  const context = await browser.newContext({ ...pixel, locale: 'de-DE', baseURL: BASE });
   const page = await context.newPage();
   /** @type {string[]} */ const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));

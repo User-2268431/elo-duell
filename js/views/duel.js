@@ -3,12 +3,13 @@ import { h, icon, toast } from '../ui.js';
 import { pickPair } from '../logic/pairing.js';
 import { progress } from '../logic/stability.js';
 import { images, loadImagesForList } from '../images.js';
+import { t } from '../i18n.js';
 
 /** Nach jeder Entscheidung (auch Gleich gut, Überspringen, Rückgängig) Eingaben so lange ignorieren (M1: Doppeltipp). */
 export const INPUT_LOCK_MS = 250;
 
 export default {
-  title: 'Duell',
+  title: () => t('common.duel'),
   /** @param {HTMLElement} root @param {any} ctx @returns {void|(()=>void)} */
   render(root, ctx) {
     const { store, navigate } = ctx;
@@ -18,12 +19,10 @@ export default {
     function emptyState() {
       const count = store.getList(id)?.options.length ?? 0;
       root.replaceChildren(h('div', { class: 'card empty stack duel-empty', 'data-testid': 'duel-empty' },
-        h('h2', null, 'Noch nichts zu vergleichen'),
-        h('p', null, count === 1
-          ? 'Für ein Duell brauchst du mindestens zwei Optionen. Füge noch eine hinzu.'
-          : 'Für ein Duell brauchst du mindestens zwei Optionen.'),
+        h('h2', null, t('duel.empty.title')),
+        h('p', null, count === 1 ? t('duel.empty.one') : t('duel.empty.text')),
         h('button', { type: 'button', class: 'btn btn-primary btn-block', 'data-testid': 'duel-empty-edit',
-          on: { click: () => navigate(`#/liste/${enc}/bearbeiten`) } }, icon('plus'), 'Optionen hinzufügen'),
+          on: { click: () => navigate(`#/liste/${enc}/bearbeiten`) } }, icon('plus'), t('common.addOptions')),
       ));
     }
 
@@ -40,7 +39,7 @@ export default {
 
     /* ---------- Gerüst ---------- */
     const barFill = h('span');
-    const bar = h('div', { class: 'bar duel-bar', role: 'progressbar', 'aria-label': 'Fortschritt',
+    const bar = h('div', { class: 'bar duel-bar', role: 'progressbar', 'aria-label': t('common.progress'),
       'aria-valuemin': 0, 'aria-valuemax': 100 }, barFill);
     const hint = h('p', { class: 'duel-hint' });
     const progressBox = h('div', { class: 'duel-progress', 'data-testid': 'duel-progress', 'data-duels': '0' }, bar, hint);
@@ -55,27 +54,27 @@ export default {
     const cardB = h('button', { type: 'button', class: 'duel-card duel-card-b', 'data-testid': 'duel-b',
       on: { click: () => decide(0) } }, imgB, nameB);
     // Quellenangabe als Geschwister der Karte (kein Link im Button): ein Tipp darauf wertet nicht.
-    const creditA = /** @type {HTMLAnchorElement} */ (h('a', { class: 'duel-credit', 'data-testid': 'duel-credit-a', target: '_blank', rel: 'noopener', hidden: true }, 'Bild: Wikipedia'));
-    const creditB = /** @type {HTMLAnchorElement} */ (h('a', { class: 'duel-credit', 'data-testid': 'duel-credit-b', target: '_blank', rel: 'noopener', hidden: true }, 'Bild: Wikipedia'));
+    const creditA = /** @type {HTMLAnchorElement} */ (h('a', { class: 'duel-credit', 'data-testid': 'duel-credit-a', target: '_blank', rel: 'noopener', hidden: true }, t('common.imageCredit')));
+    const creditB = /** @type {HTMLAnchorElement} */ (h('a', { class: 'duel-credit', 'data-testid': 'duel-credit-b', target: '_blank', rel: 'noopener', hidden: true }, t('common.imageCredit')));
     const slotA = h('div', { class: 'duel-slot' }, cardA, creditA);
     const slotB = h('div', { class: 'duel-slot' }, cardB, creditB);
 
     const undoBtn = h('button', { type: 'button', class: 'btn duel-action', 'data-testid': 'duel-undo',
-      on: { click: undo } }, icon('undo', 20), h('span', null, 'Rückgängig'));
+      on: { click: undo } }, icon('undo', 20), h('span', null, t('duel.undo')));
     const actions = h('div', { class: 'duel-actions' },
       h('button', { type: 'button', class: 'btn duel-action', 'data-testid': 'duel-draw',
-        on: { click: () => decide(0.5) } }, icon('equal', 20), h('span', null, 'Gleich gut')),
+        on: { click: () => decide(0.5) } }, icon('equal', 20), h('span', null, t('duel.draw'))),
       h('button', { type: 'button', class: 'btn duel-action', 'data-testid': 'duel-skip',
-        on: { click: skip } }, icon('skip', 20), h('span', null, 'Überspringen')),
+        on: { click: skip } }, icon('skip', 20), h('span', null, t('duel.skip'))),
       undoBtn,
     );
 
     const stableBox = h('div', { class: 'duel-stable-slot' });
-    const question = h('h2', { class: 'duel-question' }, 'Was gefällt dir besser?');
+    const question = h('h2', { class: 'duel-question' }, t('duel.question'));
 
     const view = h('div', { class: 'duel-view' },
       h('div', { class: 'duel-top' }, progressBox, stableBox, question),
-      h('div', { class: 'duel-cards' }, slotA, h('span', { class: 'duel-or', 'aria-hidden': 'true' }, 'oder'), slotB),
+      h('div', { class: 'duel-cards' }, slotA, h('span', { class: 'duel-or', 'aria-hidden': 'true' }, t('duel.or')), slotB),
       actions,
     );
     root.append(view);
@@ -142,7 +141,7 @@ export default {
         if (img.getAttribute('src') !== url) img.src = url;
         img.alt = name;
         credit.href = e.page;
-        credit.title = `Bild aus dem Wikipedia-Artikel „${e.title}“`;
+        credit.title = t('common.imageFrom', { title: e.title });
       } else {
         img.removeAttribute('src');
         img.alt = '';
@@ -192,7 +191,7 @@ export default {
       if (!d) { updateStatus(); return; }
       const list = getList();
       if (!list) return;
-      toast(`Rückgängig: ${optName(list, d.a)} – ${optName(list, d.b)}`);
+      toast(t('duel.undone', { a: optName(list, d.a), b: optName(list, d.b) }));
       show([d.a, d.b]);
     }
 
@@ -205,12 +204,12 @@ export default {
       store.setStableShown(id, true);
       view.classList.add('has-stable');
       stableBox.replaceChildren(h('div', { class: 'card duel-stable', 'data-testid': 'duel-stable', role: 'status' },
-        h('p', { class: 'duel-stable-title' }, 'Rangliste ist jetzt aussagekräftig'),
+        h('p', { class: 'duel-stable-title' }, t('duel.stable')),
         h('div', { class: 'row' },
           h('button', { type: 'button', class: 'btn btn-primary', 'data-testid': 'duel-stable-ranking',
-            on: { click: () => navigate(`#/rangliste/${enc}`) } }, 'Rangliste ansehen'),
+            on: { click: () => navigate(`#/rangliste/${enc}`) } }, t('duel.viewRanking')),
           h('button', { type: 'button', class: 'btn', 'data-testid': 'duel-stable-continue',
-            on: { click: hideStable } }, 'Weiter duellieren'),
+            on: { click: hideStable } }, t('common.keepDueling')),
         ),
       ));
     }

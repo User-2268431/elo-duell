@@ -1,6 +1,7 @@
 // Eigentümer: B – Sicherung exportieren/importieren (docs/ARCHITEKTUR.md §4B).
 // In Node importierbar; nur downloadBackup braucht das DOM.
 import { migrateWithReport, SCHEMA, SchemaError } from './schema.js';
+import { t } from '../i18n.js';
 
 /** @typedef {import('../types.js').AppState} AppState */
 
@@ -67,32 +68,32 @@ export async function readBackupFile(file) {
  * @param {File|Blob} file @returns {Promise<{state:AppState, repaired:number}>}
  */
 export async function readBackupFileDetailed(file) {
-  if (!file || typeof file.text !== 'function') throw new SchemaError('Keine Datei ausgewählt.');
-  if (file.size > MAX_BACKUP_BYTES) throw new SchemaError('Die Datei ist zu groß für eine Elo-Duell-Sicherung.');
+  if (!file || typeof file.text !== 'function') throw new SchemaError(t('backup.noFile'));
+  if (file.size > MAX_BACKUP_BYTES) throw new SchemaError(t('backup.tooBig'));
   let text;
-  try { text = await file.text(); } catch { throw new SchemaError('Die Datei konnte nicht gelesen werden.'); }
+  try { text = await file.text(); } catch { throw new SchemaError(t('backup.fileUnreadable')); }
   let doc;
   try { doc = JSON.parse(text.replace(/^﻿/, '')); } catch {
-    throw new SchemaError('Die Datei ist keine gültige Sicherung (kein JSON).');
+    throw new SchemaError(t('backup.noJson'));
   }
   if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
-    throw new SchemaError('Die Datei ist keine Elo-Duell-Sicherung.');
+    throw new SchemaError(t('backup.notOurs'));
   }
   /** @type {any} */ let raw;
   if (doc.app === 'elo-duell' && doc.kind === 'backup') {
     if (Number.isInteger(doc.schema) && doc.schema > SCHEMA) {
-      throw new SchemaError('Die Sicherung stammt aus einer neueren App-Version. Bitte App aktualisieren.');
+      throw new SchemaError(t('backup.newer'));
     }
     raw = doc.state;
   } else if (doc.app === undefined && 'lists' in doc && 'device' in doc) {
     raw = doc;   // nackter State (z. B. aus elo-duell:defekt kopiert)
   } else {
-    throw new SchemaError('Die Datei ist keine Elo-Duell-Sicherung.');
+    throw new SchemaError(t('backup.notOurs'));
   }
   try {
     return migrateWithReport(raw);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new SchemaError(`Die Sicherung ist beschädigt und wurde nicht übernommen. ${msg}`);
+    throw new SchemaError(t('backup.damaged', { msg }));
   }
 }

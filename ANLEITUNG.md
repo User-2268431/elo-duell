@@ -6,6 +6,8 @@ Mit Elo-Duell findet ihr heraus, was euch wirklich am besten gefällt: Urlaubszi
 
 Kein Konto, keine Anmeldung. Alle Daten bleiben auf deinem Handy. Nur für die Bilder werden die Begriffe deiner Listen an Wikipedia geschickt – das kannst du abschalten (siehe „Bilder“).
 
+**Sprache:** Deutsch/Englisch, automatisch nach Handy-Sprache, umschaltbar in den Einstellungen („Sprache / Language“). Ranglisten lassen sich zwischen einem deutschen und einem englischen Handy problemlos austauschen.
+
 ---
 
 ## 1. Installieren (Android, Chrome)
@@ -87,7 +89,7 @@ Alle Optionen starten mit 1.000 Punkten. Wer gewinnt, bekommt Punkte vom Verlier
 
 ### Bilder
 
-Zu vielen Optionen zeigt die App ein Bild – groß auf den Duell-Karten, klein in der Rangliste. Die Bilder kommen aus **Wikipedia** (erst die deutsche, dann die englische). Ein Tipp auf „Bild: Wikipedia“ öffnet den Artikel in einem neuen Tab, das zählt nicht als Duell. Findet die App kein passendes Foto, bleibt die Karte wie gewohnt ohne Bild.
+Zu vielen Optionen zeigt die App ein Bild – groß auf den Duell-Karten, klein in der Rangliste. Die Bilder kommen aus **Wikipedia** (erst in der App-Sprache, also bei Deutsch die deutsche, dann die englische – bei Englisch umgekehrt). Ein Tipp auf „Bild: Wikipedia“ öffnet den Artikel in einem neuen Tab, das zählt nicht als Duell. Findet die App kein passendes Foto, bleibt die Karte wie gewohnt ohne Bild.
 
 - **Datenschutz:** Die Begriffe deiner Listen werden dafür an Wikipedia gesendet.
 - **Speicher:** höchstens 300 Bilder bzw. etwa 20 MB; ältere, lange nicht gezeigte Bilder werden automatisch gelöscht, ebenso Bilder gelöschter Optionen.

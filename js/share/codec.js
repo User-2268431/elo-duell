@@ -4,6 +4,7 @@
 /** @typedef {import('../types.js').List} List */
 /** @typedef {import('../types.js').Device} Device */
 /** @typedef {import('../types.js').PartnerRanking} PartnerRanking */
+import { t } from '../i18n.js';
 
 export const MAX_PAYLOAD = 65536, MAX_INFLATED = 262144, MAX_OPTIONS = 500, MAX_NAME = 120;
 /** Höchstzahl Aliase im Payload (§5). */
@@ -12,18 +13,18 @@ const MAX_ID = 64;
 /** Plausible Grenzen gegen manipulierte Links (K1): Zeitstempel in Sekunden bis 01.01.2100, Wertung nach Rundung, Duelle. */
 export const MAX_T = 4102444800, MIN_RATING = 0, MAX_RATING = 5000, MAX_DUELS = 100000;
 
-/** @type {Record<string,string>} */
+/** Meldungsschlüssel je Fehlercode (Text in js/i18n/*.js). @type {Record<string,string>} */
 const MESSAGES = {
-  format: 'Das ist kein gültiger Elo-Duell-Link.',
-  version: 'Dieser Link stammt aus einer neueren App-Version – bitte App aktualisieren.',
-  'zu-gross': 'Die Daten sind zu groß.',
-  beschaedigt: 'Der Link ist beschädigt oder unvollständig. Bitte noch einmal senden lassen.',
+  format: 'codec.format',
+  version: 'codec.version',
+  'zu-gross': 'codec.tooBig',
+  beschaedigt: 'codec.damaged',
 };
 
 export class ShareError extends Error {
   /** @param {'format'|'version'|'zu-gross'|'beschaedigt'} code @param {string} [message] */
   constructor(code, message) {
-    super(message || MESSAGES[code] || code);
+    super(message || (MESSAGES[code] ? t(MESSAGES[code]) : code));
     this.name = 'ShareError';
     /** @type {'format'|'version'|'zu-gross'|'beschaedigt'} */
     this.code = code;
@@ -72,10 +73,10 @@ async function deflateRaw(bytes) {
 async function inflateRaw(bytes) {
   let ds;
   try {
-    if (typeof globalThis.DecompressionStream !== 'function') throw new Error('fehlt');
+    if (typeof globalThis.DecompressionStream !== 'function') throw new Error('missing');
     ds = new globalThis.DecompressionStream('deflate-raw');
   } catch {
-    throw new ShareError('version', 'Dieser Browser kann den Link nicht öffnen – bitte Chrome aktualisieren.');
+    throw new ShareError('version', t('codec.browser'));
   }
   const writer = ds.writable.getWriter();
   writer.write(bytes).catch(() => {});
