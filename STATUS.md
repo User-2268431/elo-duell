@@ -19,6 +19,11 @@ Stand: 2026-11-04 23:55 MEZ (abgeschlossen)
 - [x] 5 Review und Behebung (docs/reviews/code-review.md)
 - [x] 6 Veröffentlichung 1.0.1, Live-Prüfung bestanden (ca. 23:50)
 
+## Version 1.0.2 (05.11.2026)
+- Bilder zu Optionen aus Wikipedia (de, dann en), SVG/Wappen werden aussortiert, Grenze 300 Bilder / 20 MB (LRU), Schalter und „Bildspeicher leeren“ in den Einstellungen.
+- 168 Unit, 32 E2E, Lighthouse 1; live seit ca. 19:17 MEZ.
+- Cloud-Umgebung „elo-duell“ erlaubt github.io und die Wikimedia-Hosts.
+
 ## Nächste Schritte
-- Keine. Abgeschlossen, siehe docs/ABSCHLUSSBERICHT.md.
-- Bei künftigen Änderungen: VERSION in js/version.js und sw.js gleich erhöhen, `npm test` und `npm run test:lh` laufen lassen.
+- Offen (Rückfrage an Nutzer): englische Oberfläche ja/nein.
+- Bei künftigen Änderungen: VERSION in js/version.js, sw.js, package.json gleich erhöhen, `npm test` und `npm run test:lh` laufen lassen.
