@@ -20,7 +20,7 @@ Stand: 05.11.2026. Sortiert nach Nutzen im Verhältnis zum Aufwand. Aufwand: S =
 | **Mehr als zwei Personen** (Familie, Freundesgruppe): Vergleich mit 3 bis 6 Ranglisten, „Favorit der Gruppe“ | Neue Einsatzzwecke | M–L |
 | **Stichwahl-Modus**: Nur die gemeinsamen Top 3 noch einmal gegeneinander, beide am selben Handy abwechselnd | Entscheidung am Ende | M |
 | **Vetorecht**: Jede Person darf eine Option von vornherein streichen | Spart Duelle | S |
-| **Ergebnis als Bild teilen** (Screenshot-Karte mit Top 3 und Fotos) | Schön zum Verschicken | M |
+| ~~**Ergebnis als Bild teilen**~~ (umgesetzt in 1.0.4, zusammen mit dem Endstand) | Schön zum Verschicken | erledigt |
 
 ## Auswertung und Fortschritt
 | Idee | Nutzen | Aufwand |
